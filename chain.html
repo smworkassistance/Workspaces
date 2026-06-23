@@ -225,7 +225,7 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
     </div>
     <div id="badges"></div>
     <div id="sync-dot" title="Sync status"></div>
-    <a href="mindmapv4.html" class="btn-map" title="Map view"><i class="ti ti-360-view"></i></a>
+    <button class="btn-map" title="Map view" onclick="openMapOverlay()"><i class="ti ti-360-view"></i></button>
     <button class="btn-new" onclick="openModal()"><i class="ti ti-plus"></i> New task</button>
   </header>
   <div id="main">
@@ -841,6 +841,61 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
   render();
   startRealtime();
 })();
+</script>
+
+<!-- ── Map Overlay ─────────────────────────────────────── -->
+<style>
+#map-overlay{display:none;position:fixed;inset:0;z-index:100;background:#08081A;flex-direction:column}
+#map-overlay.open{display:flex}
+#map-tb{height:48px;flex-shrink:0;background:rgba(8,8,26,.94);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 12px;gap:10px}
+#map-tb .brand-icon{background:var(--accent);display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;color:#fff;font-size:14px;flex-shrink:0}
+#map-back{display:flex;align-items:center;gap:5px;background:transparent;border:none;cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;padding:5px 10px;border-radius:7px;transition:all .12s}
+#map-back:hover{background:rgba(255,255,255,.08);color:#fff}
+#map-status{font-size:11px;color:rgba(255,255,255,.3);margin-left:4px}
+.map-tb-right{margin-left:auto;display:flex;gap:6px}
+.map-tb-btn{display:flex;align-items:center;gap:4px;padding:5px 9px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:transparent;cursor:pointer;font-size:12px;color:rgba(255,255,255,.4);transition:all .12s}
+.map-tb-btn:hover{background:rgba(128,128,255,.1);color:#fff;border-color:rgba(128,128,255,.3)}
+.map-tb-btn.on{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.45);color:#f87171}
+#map-iframe-wrap{flex:1;position:relative}
+#map-iframe{width:100%;height:100%;border:none;display:block}
+</style>
+
+<div id="map-overlay">
+  <div id="map-tb">
+    <button id="map-back" onclick="closeMapOverlay()"><i class="ti ti-arrow-left"></i> Chain</button>
+    <div class="brand-icon"><i class="ti ti-360-view"></i></div>
+    <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,.5)">Map</span>
+    <div id="map-status"></div>
+    <div class="map-tb-right">
+      <button class="map-tb-btn" onclick="openMapFull()" title="Open full screen"><i class="ti ti-arrows-maximize"></i></button>
+    </div>
+  </div>
+  <div id="map-iframe-wrap">
+    <iframe id="map-iframe" src="" allow="accelerometer"></iframe>
+  </div>
+</div>
+
+<script>
+function openMapOverlay(){
+  var ol=document.getElementById('map-overlay');
+  var fr=document.getElementById('map-iframe');
+  ol.classList.add('open');
+  document.body.style.overflow='hidden';
+  if(!fr.src||fr.src==='about:blank'||fr.src===window.location.href){
+    fr.src='mindmapv5.html';
+  }
+}
+function closeMapOverlay(){
+  document.getElementById('map-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function openMapFull(){
+  window.open('mindmapv5.html','_blank');
+}
+// ESC closes overlay
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('map-overlay').classList.contains('open'))closeMapOverlay();
+});
 </script>
 </body>
 </html>
