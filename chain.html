@@ -232,7 +232,12 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
 
 /* ── Mobile stack nav ── */
 @media(max-width:640px){
-  #proj-bar{display:none}
+  #proj-bar{
+    display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    padding:8px 12px 8px;gap:6px;
+    scrollbar-width:none;border-bottom:0.5px solid rgba(60,60,67,.18);
+  }
+  #proj-bar::-webkit-scrollbar{display:none}
   #main{position:relative;overflow:hidden}
   #sidebar{
     position:absolute;top:0;left:0;right:0;bottom:0;
