@@ -20,17 +20,16 @@ body{background:#08081A;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
 
 #graph{position:absolute;top:48px;left:0;right:0;bottom:0}
 
-#hint{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(124,111,255,.15);border:1px solid rgba(124,111,255,.3);border-radius:20px;padding:5px 16px;font-size:11px;color:rgba(255,255,255,.55);pointer-events:none;z-index:15;transition:opacity .6s}
+#hint{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(124,111,255,.15);border:1px solid rgba(124,111,255,.3);border-radius:20px;padding:5px 16px;font-size:11px;color:rgba(255,255,255,.6);pointer-events:none;z-index:15;transition:opacity .6s;white-space:nowrap}
 #hint.hide{opacity:0}
 
-/* Panel */
 #panel{position:fixed;right:0;top:48px;bottom:0;width:290px;background:rgba(8,8,26,.97);backdrop-filter:blur(14px);border-left:1px solid rgba(255,255,255,.08);padding:18px;transform:translateX(100%);transition:transform .22s ease;overflow-y:auto;z-index:20}
 #panel.open{transform:translateX(0)}
-.pcls{float:right;background:transparent;border:none;color:rgba(255,255,255,.3);font-size:22px;cursor:pointer;line-height:1;transition:color .12s}
+.pcls{float:right;background:transparent;border:none;color:rgba(255,255,255,.3);font-size:22px;cursor:pointer;line-height:1;transition:color .12s;padding:0}
 .pcls:hover{color:#fff}
 .ptag{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:10px}
 .ptitle{font-size:16px;font-weight:600;color:#fff;margin-bottom:10px;line-height:1.35;clear:both}
-.pmeta{font-size:12px;color:#D97706;margin-bottom:10px}
+.pmeta{font-size:12px;color:#D97706;margin-bottom:10px;display:flex;align-items:center;gap:5px}
 .pbar-wrap{margin-bottom:14px}
 .pbar-lbl{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.3);margin-bottom:4px}
 .pbar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
@@ -54,14 +53,12 @@ body{background:#08081A;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
 .mbar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
 .mfill{height:100%;border-radius:2px}
 
-/* Legend */
 #legend{position:fixed;bottom:16px;left:16px;background:rgba(8,8,26,.88);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 13px;z-index:15;font-size:11px;color:rgba(255,255,255,.45)}
 .leg{display:flex;align-items:center;gap:7px;margin-bottom:4px}
 .leg:last-child{margin-bottom:0}
 .ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .lline{width:16px;height:2px;flex-shrink:0}
 
-/* empty */
 #empty{display:none;position:fixed;inset:0;top:48px;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:rgba(255,255,255,.25);text-align:center}
 #empty i{font-size:44px}
 #empty p{font-size:13px;line-height:1.6}
@@ -76,7 +73,7 @@ body{background:#08081A;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
   <span id="status">Loading…</span>
 </div>
 
-<div id="hint">Click a node for details &nbsp;·&nbsp; Drag to rotate &nbsp;·&nbsp; Scroll to zoom</div>
+<div id="hint">Hover node for name &nbsp;·&nbsp; Drag to rotate &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Click for details</div>
 <div id="graph"></div>
 <div id="empty"><i class="ti ti-circuit-diode"></i><p>No data yet.<br>Add tasks in Chain first.</p></div>
 
@@ -86,7 +83,7 @@ body{background:#08081A;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
   <div class="leg"><div class="ldot" style="background:#7C6FFF"></div>Active task</div>
   <div class="leg"><div class="ldot" style="background:#16A37F"></div>Done</div>
   <div class="leg"><div class="ldot" style="background:#D97706"></div>Has delegation</div>
-  <div class="leg"><div class="ldot" style="background:rgba(255,255,255,.5)"></div>Project</div>
+  <div class="leg"><div class="ldot" style="background:rgba(255,255,255,.55)"></div>Project</div>
   <div class="leg"><div class="lline" style="background:#D97706"></div>Same person</div>
 </div>
 
@@ -103,22 +100,8 @@ function pct(t){var d=0,tot=0;t.steps.forEach(function(s){tot++;if(s.done)d++;(s
 function gp(id){return D.projects.find(function(p){return p.id===id;});}
 function taskColor(t){if(t.done)return'#16A37F';if(t.steps.some(function(s){return s.delegated;}))return'#D97706';return'#7C6FFF';}
 
-function makeLabel(text, size, color) {
-  var c = document.createElement('canvas');
-  var maxW = 256, h = size * 2.2;
-  c.width = maxW; c.height = h;
-  var ctx = c.getContext('2d');
-  ctx.font = 'bold '+size+'px sans-serif';
-  var label = text.length > 22 ? text.slice(0,20)+'…' : text;
-  ctx.fillStyle = color || 'rgba(255,255,255,0.85)';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(label, maxW/2, h/2);
-  return c;
-}
-
-function buildGraph() {
-  var nodes = [], links = [];
+function buildGraph(){
+  var nodes=[], links=[];
 
   nodes.push({id:'__self', name:'Me', type:'self', color:'#7C6FFF', val:28});
 
@@ -129,73 +112,57 @@ function buildGraph() {
 
   D.tasks.forEach(function(t){
     nodes.push({id:t.id, name:t.title, type:'task', color:taskColor(t), val:9, task:t});
-    var par = t.projectId || '__self';
+    var parent = t.projectId || '__self';
     var lc = t.projectId ? ((gp(t.projectId)||{}).color||'#8B8BA7')+'77' : '#8B8BA755';
-    links.push({source:par, target:t.id, color:lc, lw:1, par:0});
+    links.push({source:parent, target:t.id, color:lc, lw:1, par:0});
   });
 
-  // Same assignee connections
-  var amap = {};
+  // Same assignee
+  var amap={};
   D.tasks.forEach(function(t){
     if(!t.assignee) return;
-    var k = t.assignee.toLowerCase().trim();
-    if(!amap[k]) amap[k] = [];
+    var k=t.assignee.toLowerCase().trim();
+    if(!amap[k]) amap[k]=[];
     amap[k].push(t.id);
   });
   Object.keys(amap).forEach(function(k){
-    var ids = amap[k]; if(ids.length < 2) return;
+    var ids=amap[k]; if(ids.length<2) return;
     for(var i=0;i<ids.length-1;i++)
-      links.push({source:ids[i], target:ids[i+1], color:'#D97706', lw:1.5, par:3});
+      links.push({source:ids[i],target:ids[i+1],color:'#D97706',lw:1.5,par:3});
   });
 
-  // Same delegatee connections
-  var dmap = {};
+  // Same delegatee
+  var dmap={};
   D.tasks.forEach(function(t){
     t.steps.forEach(function(s){
       if(!s.delegated||!s.delegatedTo) return;
-      var k = s.delegatedTo.toLowerCase().trim();
-      if(!dmap[k]) dmap[k] = [];
+      var k=s.delegatedTo.toLowerCase().trim();
+      if(!dmap[k]) dmap[k]=[];
       if(dmap[k].indexOf(t.id)===-1) dmap[k].push(t.id);
     });
   });
   Object.keys(dmap).forEach(function(k){
-    var ids = dmap[k]; if(ids.length < 2) return;
+    var ids=dmap[k]; if(ids.length<2) return;
     for(var i=0;i<ids.length-1;i++)
-      links.push({source:ids[i], target:ids[i+1], color:'#D9770688', lw:1, par:1});
+      links.push({source:ids[i],target:ids[i+1],color:'#D9770688',lw:1,par:1});
   });
 
   return {nodes:nodes, links:links};
 }
 
-function initGraph(data) {
+function initGraph(data){
   var el = document.getElementById('graph');
-  var w = el.offsetWidth || window.innerWidth;
-  var h = el.offsetHeight || (window.innerHeight - 48);
 
   Graph = ForceGraph3D()(el)
-    .width(w)
-    .height(h)
+    .width(el.offsetWidth || window.innerWidth)
+    .height(el.offsetHeight || (window.innerHeight - 48))
     .backgroundColor('#08081A')
     .graphData(data)
     .nodeLabel('name')
     .nodeColor('color')
     .nodeVal('val')
-    .nodeOpacity(0.92)
-    .nodeThreeObjectExtend(true)
-    .nodeThreeObject(function(n) {
-      try {
-        var THREE = window.THREE || (Graph && Graph.scene && Graph.scene().userData && Graph.scene().userData.THREE);
-        if (!THREE) return null;
-        var canvas = makeLabel(n.name, n.type==='self'?22:n.type==='project'?18:13, n.type==='self'?'#fff':'rgba(255,255,255,0.8)');
-        var tex = new THREE.CanvasTexture(canvas);
-        var mat = new THREE.SpriteMaterial({map:tex, transparent:true, depthWrite:false});
-        var sprite = new THREE.Sprite(mat);
-        var scale = n.type==='self'?36:n.type==='project'?28:22;
-        sprite.scale.set(scale, scale*0.3, 1);
-        sprite.position.set(0, (n.val||5)*1.8+6, 0);
-        return sprite;
-      } catch(e) { return null; }
-    })
+    .nodeOpacity(0.9)
+    .nodeResolution(16)
     .linkColor('color')
     .linkWidth('lw')
     .linkOpacity(0.85)
@@ -215,17 +182,18 @@ function initGraph(data) {
 
   if(!D.tasks.length && !D.projects.length)
     document.getElementById('empty').style.display = 'flex';
+
+  setTimeout(function(){ document.getElementById('hint').classList.add('hide'); }, 5000);
 }
 
-// ── Panel ─────────────────────────────────────────────────
-function showPanel(node) {
+function showPanel(node){
   var c = document.getElementById('pc');
   var close = '<button class="pcls" onclick="closePanel()">×</button>';
 
-  if (node.type === 'self') {
-    var active = D.tasks.filter(function(t){return!t.done;}).length;
-    var done   = D.tasks.filter(function(t){return t.done;}).length;
-    c.innerHTML = close +
+  if(node.type==='self'){
+    var active=D.tasks.filter(function(t){return!t.done;}).length;
+    var done=D.tasks.filter(function(t){return t.done;}).length;
+    c.innerHTML = close+
       '<div style="font-size:30px;margin-bottom:8px">👤</div>'+
       '<div class="ptitle">You</div>'+
       '<div class="srow">'+
@@ -234,38 +202,39 @@ function showPanel(node) {
         '<div class="sbox" style="background:rgba(255,255,255,.05)"><div class="snum" style="color:#fff">'+D.projects.length+'</div><div class="slbl">Projects</div></div>'+
       '</div>';
   }
-
-  else if (node.type === 'project') {
-    var p = node.proj;
-    var ptasks = D.tasks.filter(function(t){return t.projectId===p.id;});
-    var avg = ptasks.length ? Math.round(ptasks.reduce(function(s,t){return s+pct(t);},0)/ptasks.length) : 0;
-    c.innerHTML = close +
+  else if(node.type==='project'){
+    var p=node.proj;
+    var ptasks=D.tasks.filter(function(t){return t.projectId===p.id;});
+    var avg=ptasks.length?Math.round(ptasks.reduce(function(s,t){return s+pct(t);},0)/ptasks.length):0;
+    c.innerHTML = close+
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;clear:both">'+
         '<div style="width:14px;height:14px;border-radius:50%;background:'+p.color+'"></div>'+
         '<div class="ptitle" style="margin:0">'+xe(p.name)+'</div>'+
       '</div>'+
       '<div style="font-size:12px;color:rgba(255,255,255,.3);margin-bottom:8px">'+ptasks.length+' tasks · '+avg+'% overall</div>'+
       '<div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:'+avg+'%;background:'+p.color+'"></div></div></div>'+
-      ptasks.map(function(t){var pp=pct(t);return'<div class="ptcard"><div class="ptname">'+xe(t.title)+'</div><div class="mbar"><div class="mfill" style="width:'+pp+'%;background:'+(t.done?'#16A37F':'#7C6FFF')+'"></div></div></div>';}).join('');
+      ptasks.map(function(t){var pp=pct(t);return'<div class="ptcard"><div class="ptname">'+xe(t.title)+'</div>'+
+        '<div class="mbar"><div class="mfill" style="width:'+pp+'%;background:'+(t.done?'#16A37F':'#7C6FFF')+'"></div></div></div>';}).join('');
   }
-
-  else if (node.type === 'task') {
-    var t = node.task;
-    var proj = t.projectId ? gp(t.projectId) : null;
-    var pp = pct(t);
-    var curr = t.steps.find(function(s){return s.current&&!s.done;});
-    var doneS = t.steps.filter(function(s){return s.done;}).length;
-    c.innerHTML = close +
-      (proj ? '<div class="ptag" style="background:'+proj.color+'20;border:1px solid '+proj.color+'44;color:'+proj.color+'">'+xe(proj.name)+'</div>'
-             : '<div style="font-size:10px;color:rgba(255,255,255,.2);margin-bottom:8px">No project</div>') +
+  else if(node.type==='task'){
+    var t=node.task;
+    var proj=t.projectId?gp(t.projectId):null;
+    var pp=pct(t);
+    var curr=t.steps.find(function(s){return s.current&&!s.done;});
+    var doneS=t.steps.filter(function(s){return s.done;}).length;
+    c.innerHTML = close+
+      (proj?'<div class="ptag" style="background:'+proj.color+'20;border:1px solid '+proj.color+'44;color:'+proj.color+'">'+xe(proj.name)+'</div>'
+           :'<div style="font-size:10px;color:rgba(255,255,255,.2);margin-bottom:8px">No project</div>')+
       '<div class="ptitle">'+xe(t.title)+'</div>'+
-      (t.assignee ? '<div class="pmeta"><i class="ti ti-user"></i> '+xe(t.assignee)+'</div>' : '') +
+      (t.assignee?'<div class="pmeta"><i class="ti ti-user"></i> '+xe(t.assignee)+'</div>':'')+
       '<div class="pbar-wrap"><div class="pbar-lbl"><span>Progress</span><span>'+pp+'%</span></div>'+
         '<div class="pbar"><div class="pbar-fill" style="width:'+pp+'%;background:'+(t.done?'#16A37F':'#7C6FFF')+'"></div></div></div>'+
-      (curr ? '<div class="pcurr"><div class="pcurr-lbl">CURRENT STEP</div><div class="pcurr-txt">'+xe(curr.text)+'</div>'+(curr.delegatedTo?'<div class="pcurr-del">→ '+xe(curr.delegatedTo)+'</div>':'')+'</div>' : '') +
+      (curr?'<div class="pcurr"><div class="pcurr-lbl">CURRENT STEP</div><div class="pcurr-txt">'+xe(curr.text)+'</div>'+
+        (curr.delegatedTo?'<div class="pcurr-del">→ '+xe(curr.delegatedTo)+'</div>':'')+'</div>':'')+
       '<div class="pstep-lbl">'+doneS+'/'+t.steps.length+' steps done</div>'+
       t.steps.map(function(s){
-        return '<div class="pstep"><div class="pstep-c'+(s.done?' dk':'')+'"></div><span class="pstep-t'+(s.done?' dk':'')+'">'+xe(s.text)+'</span></div>';
+        return'<div class="pstep"><div class="pstep-c'+(s.done?' dk':'')+'"></div>'+
+          '<span class="pstep-t'+(s.done?' dk':'')+'">'+xe(s.text)+'</span></div>';
       }).join('');
   }
 
@@ -276,34 +245,32 @@ function closePanel(){document.getElementById('panel').classList.remove('open');
 var _hh=false;
 function hideHint(){if(_hh)return;_hh=true;document.getElementById('hint').classList.add('hide');}
 
-// ── Load + realtime ───────────────────────────────────────
-async function init() {
-  try {
+async function init(){
+  try{
     var res = await db.from('chain_state').select('data').eq('id','main').maybeSingle();
-    if (res.error) throw res.error;
-    if (res.data) {
+    if(res.error) throw res.error;
+    if(res.data){
       D = res.data.data || {tasks:[],log:[],projects:[]};
-      if(!D.tasks)    D.tasks    = [];
-      if(!D.log)      D.log      = [];
-      if(!D.projects) D.projects = [];
+      if(!D.tasks)    D.tasks=[];
+      if(!D.log)      D.log=[];
+      if(!D.projects) D.projects=[];
     }
-  } catch(e) {
-    console.error('Load failed:', e);
-    document.getElementById('status').textContent = 'Load error';
+  }catch(e){
+    console.error('Load failed:',e);
+    document.getElementById('status').textContent='Load error — check console';
   }
 
   initGraph(buildGraph());
-  setTimeout(function(){ document.getElementById('hint').classList.add('hide'); }, 5000);
 
   db.channel('map_sync')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chain_state',filter:'id=eq.main'},
       function(payload){
         if(!payload.new) return;
-        D = payload.new.data || {tasks:[],log:[],projects:[]};
-        if(!D.tasks)    D.tasks    = [];
-        if(!D.projects) D.projects = [];
+        D=payload.new.data||{tasks:[],log:[],projects:[]};
+        if(!D.tasks) D.tasks=[];
+        if(!D.projects) D.projects=[];
         if(Graph) Graph.graphData(buildGraph());
-        document.getElementById('status').textContent = D.tasks.length+' tasks · '+D.projects.length+' projects';
+        document.getElementById('status').textContent=D.tasks.length+' tasks · '+D.projects.length+' projects';
       })
     .subscribe();
 }
