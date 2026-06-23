@@ -208,10 +208,79 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinning{display:inline-block;animation:spin .9s linear infinite}
 
-/* Responsive */
-@media(max-width:560px){
-  #main{flex-direction:column}
-  #sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);max-height:260px}
+/* ── Task row (grouped list) ── */
+.task-section{margin-bottom:8px}
+.sect-hdr{display:flex;align-items:center;gap:6px;padding:10px 4px 4px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.sect-hdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sect-tasks{border-radius:var(--radius-md);overflow:hidden;border:1.5px solid var(--border)}
+.task-row{display:flex;align-items:center;gap:8px;padding:9px 8px;cursor:pointer;background:var(--surface);border-bottom:1.5px solid var(--border);transition:background .1s;position:relative}
+.task-row:last-child{border-bottom:none}
+.task-row:hover{background:#F8F8FC}
+.task-row.tr-active{background:rgba(124,111,255,.06)}
+.task-row.tr-done{opacity:.48}
+.tr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tr-body{flex:1;min-width:0}
+.tr-name{font-size:13px;font-weight:500;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.tr-meta{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-prog{width:36px;height:3px;background:var(--border);border-radius:2px;flex-shrink:0;overflow:hidden}
+.tr-fill{height:100%;border-radius:2px;background:var(--accent)}
+.tr-fill.tr-fill-done{background:var(--green)}
+.tr-check{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-size:11px;flex-shrink:0;transition:all .12s;padding:0}
+.tr-check:hover{border-color:var(--green);color:var(--green)}
+.tr-check.tr-checked{border-color:var(--green);background:var(--green);color:#fff}
+.tr-chev{display:none;color:var(--muted);font-size:13px;flex-shrink:0;opacity:.35}
+
+/* ── Mobile stack nav ── */
+@media(max-width:640px){
+  #proj-bar{display:none}
+  #main{position:relative;overflow:hidden}
+  #sidebar{
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    width:100%;border-right:none;
+    background:var(--bg);
+    transform:translateX(0);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    z-index:10;
+  }
+  #detail{
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    width:100%;
+    background:var(--surface);
+    transform:translateX(100%);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    z-index:11;
+  }
+  body.mob-detail #sidebar{transform:translateX(-30%)}
+  body.mob-detail #detail{transform:translateX(0)}
+
+  /* Apple-style list on mobile */
+  #task-list{padding:0 0 80px}
+  .sect-hdr{padding:20px 16px 6px;font-size:11px;letter-spacing:.06em;color:rgba(60,60,67,.55)}
+  .sect-tasks{border:none;border-radius:10px;margin:0 16px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.05)}
+  .task-row{
+    padding:11px 14px 11px 14px;min-height:50px;
+    border-bottom:none;border-radius:0;background:#fff;
+  }
+  .task-row::after{
+    content:'';position:absolute;bottom:0;left:48px;right:0;
+    height:.5px;background:rgba(60,60,67,.18);
+  }
+  .task-row:last-child::after{display:none}
+  .task-row:hover,.task-row.tr-active{background:rgba(124,111,255,.05)}
+  .tr-dot{width:10px;height:10px}
+  .tr-name{font-size:15px;font-weight:400}
+  .tr-meta{font-size:12px;margin-top:2px}
+  .tr-chev{display:block}
+  .tr-prog{width:40px;height:3px}
+
+  /* Mobile back button */
+  .btn-mob-back{
+    display:flex;align-items:center;gap:6px;
+    padding:10px 16px 6px;font-size:15px;font-weight:400;
+    color:var(--accent);background:transparent;border:none;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-mob-back i{font-size:17px}
 }
 </style>
 </head>
@@ -225,7 +294,7 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
     </div>
     <div id="badges"></div>
     <div id="sync-dot" title="Sync status"></div>
-    <a href="mindmapv6.html" class="btn-map" title="Map view"><i class="ti ti-360-view"></i></a>
+    <a href="mindmapv7.html" class="btn-map" title="Map view"><i class="ti ti-360-view"></i></a>
     <button class="btn-new" onclick="openModal()"><i class="ti ti-plus"></i> New task</button>
   </header>
   <div id="main">
@@ -379,7 +448,11 @@ function filteredTasks() {
 }
 
 // ── Render ────────────────────────────────────────────────
-function render() { renderBadges(); renderProjects(); renderList(); renderDetail(); }
+function render() {
+  renderBadges(); renderProjects(); renderList(); renderDetail();
+  var bb=document.getElementById('mob-back-btn');
+  if(bb) bb.style.display=window.innerWidth<=640?'flex':'none';
+}
 
 function renderBadges() {
   var active=D.tasks.filter(function(t){return!t.done;}).length;
@@ -412,30 +485,50 @@ function renderProjects() {
   bar.innerHTML = html;
 }
 
+function taskRowHtml(t) {
+  var p = pct(t);
+  var proj = t.projectId ? gp(t.projectId) : null;
+  var dot = proj ? proj.color : '#8B8BA7';
+  var doneS = t.steps.filter(function(s){return s.done;}).length;
+  var meta = t.steps.length ? doneS+'/'+t.steps.length+' steps' : 'No steps';
+  if (t.assignee) meta += ' · '+xe(t.assignee);
+  var cls = 'task-row'+(t.id===aid?' tr-active':'')+(t.done?' tr-done':'');
+  return '<div class="'+cls+'" onclick="sel(\''+t.id+'\')">'+
+    '<div class="tr-dot" style="background:'+dot+'"></div>'+
+    '<div class="tr-body">'+
+      '<div class="tr-name">'+xe(t.title)+'</div>'+
+      '<div class="tr-meta">'+meta+'</div>'+
+    '</div>'+
+    '<div class="tr-prog"><div class="tr-fill'+(t.done?' tr-fill-done':'')+'" style="width:'+p+'%"></div></div>'+
+    '<button class="tr-check'+(t.done?' tr-checked':'')+'" onclick="event.stopPropagation();toggleDone(\''+t.id+'\')" title="'+(t.done?'Reopen':'Done')+'">'+(t.done?'<i class="ti ti-check"></i>':'')+'</button>'+
+    '<i class="ti ti-chevron-right tr-chev"></i>'+
+  '</div>';
+}
+
 function renderList() {
   var el = document.getElementById('task-list');
-  var tasks = filteredTasks();
+  var isMobile = window.innerWidth <= 640;
+  var tasks = isMobile ? D.tasks : filteredTasks();
   if (!tasks.length) {
     el.innerHTML = '<div class="empty-st"><i class="ti ti-list-check"></i><p>'+(D.tasks.length?'No tasks in this filter':'No tasks yet')+'</p></div>';
     return;
   }
-  el.innerHTML = tasks.map(function(t) {
-    var p = pct(t);
-    var doneS = t.steps.filter(function(s){return s.done;}).length;
-    var cls = 'task-card'+(t.id===aid?' active':'')+(t.done?' done-card':'');
-    var proj = t.projectId ? gp(t.projectId) : null;
-    var projTag = proj ? '<span class="proj-tag" style="background:'+proj.color+'">'+xe(proj.name)+'</span>' : '';
-    var tags = projTag;
-    if (t.steps.length) tags += '<span class="chip chip-steps">'+doneS+'/'+t.steps.length+' steps</span>';
-    if (t.assignee)     tags += '<span class="chip chip-assignee"><i class="ti ti-user"></i>'+xe(t.assignee)+'</span>';
-    return '<div class="'+cls+'" onclick="sel(\''+t.id+'\')">'+
-      '<div class="task-card-header">'+
-        '<div class="task-card-title">'+xe(t.title)+'</div>'+
-        '<button class="btn-icon'+(t.done?' success':'')+'" onclick="event.stopPropagation();toggleDone(\''+t.id+'\')" title="'+(t.done?'Reopen':'Mark done')+'">'+
-          '<i class="ti '+(t.done?'ti-refresh':'ti-circle-check')+'"></i></button>'+
-      '</div>'+
-      (tags?'<div class="task-card-tags">'+tags+'</div>':'')+
-      '<div class="task-prog"><div class="prog-fill'+(t.done?' done-fill':'')+'" style="width:'+p+'%"></div></div>'+
+  // Build groups: one per project (in project order), then standalone
+  var groups = [];
+  D.projects.forEach(function(p) {
+    var pt = tasks.filter(function(t){return t.projectId===p.id;});
+    if (pt.length) groups.push({label:p.name, color:p.color, tasks:pt});
+  });
+  var standalone = tasks.filter(function(t){return !t.projectId;});
+  if (standalone.length) groups.push({label:'My Tasks', color:'#8B8BA7', tasks:standalone});
+  if (!groups.length) {
+    el.innerHTML = '<div class="empty-st"><i class="ti ti-list-check"></i><p>No tasks in this filter</p></div>';
+    return;
+  }
+  el.innerHTML = groups.map(function(g) {
+    return '<div class="task-section">'+
+      '<div class="sect-hdr"><span class="sect-hdot" style="background:'+g.color+'"></span>'+xe(g.label)+'</div>'+
+      '<div class="sect-tasks">'+g.tasks.map(taskRowHtml).join('')+'</div>'+
     '</div>';
   }).join('');
 }
@@ -445,6 +538,7 @@ function renderDetail() {
   var t = aid ? gt(aid) : null;
   if (!t) {
     el.innerHTML='<div class="no-detail"><i class="ti ti-hand-click"></i><p>Select a task to see details</p></div>';
+    document.body.classList.remove('mob-detail');
     return;
   }
   var p = pct(t);
@@ -453,6 +547,7 @@ function renderDetail() {
   var assigneeHtml = t.assignee ? '<span class="chip chip-assignee"><i class="ti ti-user"></i>'+xe(t.assignee)+'</span>' : '';
   el.innerHTML=
     '<div class="detail-inner">'+
+      '<button class="btn-mob-back" onclick="mobileBack()" style="display:none;margin-bottom:4px" id="mob-back-btn"><i class="ti ti-chevron-left"></i> Tasks</button>'+
       '<div class="detail-header">'+
         '<div class="detail-title">'+xe(t.title)+'</div>'+
         '<div class="detail-actions">'+
@@ -760,7 +855,15 @@ function delTask(id) {
   sv(); render();
 }
 
-function sel(id){aid=id;ctab='steps';render();}
+function sel(id){
+  aid=id;ctab='steps';
+  if(window.innerWidth<=640) document.body.classList.add('mob-detail');
+  render();
+}
+function mobileBack(){
+  document.body.classList.remove('mob-detail');
+  aid=null;renderDetail();
+}
 
 // ── Task Modal ────────────────────────────────────────────
 function openModal(id) {
