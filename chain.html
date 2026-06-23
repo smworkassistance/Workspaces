@@ -512,8 +512,7 @@ function taskRowHtml(t) {
 
 function renderList() {
   var el = document.getElementById('task-list');
-  var isMobile = window.innerWidth <= 640;
-  var tasks = isMobile ? D.tasks : filteredTasks();
+  var tasks = filteredTasks();
   if (!tasks.length) {
     el.innerHTML = '<div class="empty-st"><i class="ti ti-list-check"></i><p>'+(D.tasks.length?'No tasks in this filter':'No tasks yet')+'</p></div>';
     return;
