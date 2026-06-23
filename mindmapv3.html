@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chain — Map v3</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1/dist/3d-force-graph.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow:hidden;height:100vh;transition:background .3s}
+body.dark{--bg:#08081A;--surf:rgba(8,8,26,.95);--text:rgba(255,255,255,.86);--text2:rgba(255,255,255,.38);--border:rgba(255,255,255,.08);--card:rgba(255,255,255,.04);--tb:rgba(8,8,26,.93)}
+body.light{--bg:#EEF0FA;--surf:rgba(238,240,250,.97);--text:rgba(15,15,40,.88);--text2:rgba(15,15,40,.42);--border:rgba(0,0,0,.09);--card:rgba(0,0,0,.04);--tb:rgba(238,240,250,.95)}
+
+#topbar{position:fixed;top:0;left:0;right:0;height:48px;background:var(--tb);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:20}
+.btn-back{display:flex;align-items:center;gap:5px;color:var(--text2);text-decoration:none;font-size:13px;font-weight:500;padding:5px 10px;border-radius:6px;transition:all .12s}
+.btn-back:hover{background:rgba(128,128,255,.12);color:var(--text)}
+.tb-sep{width:1px;height:20px;background:var(--border)}
+.tb-title{font-size:14px;font-weight:500;color:var(--text2)}
+#status{font-size:11px;color:var(--text2)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.tb-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:12px;color:var(--text2);transition:all .12s;white-space:nowrap}
+.tb-btn:hover{background:rgba(128,128,255,.1);color:var(--text);border-color:rgba(128,128,255,.3)}
+#back-full{display:none}
+#view-chip{display:none;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);font-size:11px;font-weight:600;color:#FFD700}
+
+#graph{position:absolute;top:48px;left:0;right:0;bottom:0}
+
+#hint{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:5px 16px;font-size:11px;color:var(--text);pointer-events:none;z-index:15;transition:opacity .6s;white-space:nowrap}
+#hint.hide{opacity:0}
+
+/* Panel */
+#panel{position:fixed;right:0;top:48px;bottom:0;width:300px;background:var(--surf);backdrop-filter:blur(16px);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease;z-index:20}
+#panel.open{transform:translateX(0)}
+#pc{flex:1;overflow-y:auto;padding:18px}
+.pcls{float:right;background:transparent;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;padding:0;transition:color .12s}
+.pcls:hover{color:var(--text)}
+
+/* Selected node indicator strip */
+#sel-strip{display:none;padding:8px 14px;border-top:1px solid var(--border);background:rgba(255,215,0,.06)}
+#sel-strip.show{display:block}
+.sel-title{font-size:10px;font-weight:700;letter-spacing:.07em;color:#FFD700;margin-bottom:8px}
+
+/* Family view buttons */
+.fam-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.fam-btn{padding:7px 6px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:11px;color:var(--text);transition:all .12s;text-align:center;line-height:1.3}
+.fam-btn:hover{border-color:rgba(255,215,0,.4);background:rgba(255,215,0,.08);color:#FFD700}
+.fam-btn.active{border-color:#FFD700;background:rgba(255,215,0,.14);color:#FFD700}
+.fam-reset{width:100%;padding:6px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:11px;color:var(--text2);transition:all .12s}
+.fam-reset:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+/* Panel content */
+.ptype{font-size:10px;font-weight:700;letter-spacing:.08em;margin-bottom:6px;opacity:.55;color:var(--text)}
+.ptitle{font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px;line-height:1.35;clear:both;word-break:break-word}
+.pmeta{font-size:12px;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.ptag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:10px}
+.pbar-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px}
+.pbar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:14px}
+.pbar-fill{height:100%;border-radius:2px}
+.pcurr{border-radius:8px;padding:10px;margin-bottom:12px}
+.pcurr-lbl{font-size:10px;font-weight:700;letter-spacing:.06em;margin-bottom:4px}
+.pcurr-txt{font-size:12px;line-height:1.4;color:var(--text)}
+.pcurr-del{font-size:11px;margin-top:3px}
+.pstep-hdr{font-size:11px;color:var(--text2);margin-bottom:6px}
+.pstep{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.pstep-c{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--text2);flex-shrink:0;margin-top:2px}
+.pstep-c.dk{border-color:#32CD32;background:#32CD32}
+.pstep-t{font-size:12px;color:var(--text);line-height:1.4}
+.pstep-t.dk{text-decoration:line-through;opacity:.4}
+.psub{display:flex;gap:6px;padding:3px 0 3px 20px;align-items:flex-start}
+.psub-c{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--text2);flex-shrink:0;margin-top:3px}
+.psub-c.dk{border-color:#ADFF2F;background:#ADFF2F}
+.psub-t{font-size:11px;color:var(--text);opacity:.75}
+.psub-t.dk{text-decoration:line-through;opacity:.35}
+.srow{display:flex;gap:8px;margin-bottom:14px}
+.sbox{flex:1;border-radius:8px;padding:10px 6px;text-align:center}
+.snum{font-size:20px;font-weight:700}
+.slbl{font-size:10px;color:var(--text2);margin-top:2px}
+.ptcard{background:var(--card);border-radius:6px;padding:8px;margin-bottom:5px}
+.ptname{font-size:12px;color:var(--text);margin-bottom:4px}
+.mbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.mfill{height:100%;border-radius:2px}
+
+/* Legend */
+#legend{position:fixed;bottom:16px;left:16px;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:11px 13px;z-index:15;font-size:11px;color:var(--text2)}
+.leg{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.leg:last-child{margin-bottom:0}
+.ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.lline{width:16px;height:2px;flex-shrink:0;border-radius:1px}
+
+#empty{display:none;position:fixed;inset:0;top:48px;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text2);text-align:center}
+#empty i{font-size:44px}
+#empty p{font-size:13px;line-height:1.6}
+</style>
+</head>
+<body class="dark">
+
+<div id="topbar">
+  <a href="chain.html" class="btn-back"><i class="ti ti-arrow-left"></i> Chain</a>
+  <div class="tb-sep"></div>
+  <span class="tb-title">Map v3</span>
+  <span id="status">Loading…</span>
+  <div id="view-chip"><i class="ti ti-filter"></i><span id="view-chip-txt"></span></div>
+  <div class="tb-right">
+    <button id="back-full" class="tb-btn" onclick="exitIndividualView()"><i class="ti ti-arrows-maximize"></i> Full map</button>
+    <button class="tb-btn" onclick="toggleTheme()" id="theme-btn"><i class="ti ti-sun"></i> Light</button>
+  </div>
+</div>
+
+<div id="hint">Hover = highlight links &nbsp;·&nbsp; Click = focus + lock &nbsp;·&nbsp; Dbl-click = family views</div>
+<div id="graph"></div>
+<div id="empty"><i class="ti ti-circuit-diode"></i><p>No data yet.<br>Add tasks in Chain first.</p></div>
+
+<div id="panel">
+  <div id="pc"></div>
+  <div id="sel-strip">
+    <div class="sel-title"><i class="ti ti-focus-2"></i> LOCKED ON THIS NODE</div>
+    <div class="fam-grid">
+      <button class="fam-btn" id="fv-imm"   onclick="openFamilyView('immediate')">🔗 Immediate<br><span style="font-size:10px;opacity:.6">direct links</span></button>
+      <button class="fam-btn" id="fv-child"  onclick="openFamilyView('children')">👶 Children<br><span style="font-size:10px;opacity:.6">all descendants</span></button>
+      <button class="fam-btn" id="fv-parent" onclick="openFamilyView('parents')">👴 Parents<br><span style="font-size:10px;opacity:.6">all ancestors</span></button>
+      <button class="fam-btn" id="fv-sib"    onclick="openFamilyView('siblings')">👫 Siblings<br><span style="font-size:10px;opacity:.6">same level</span></button>
+    </div>
+    <button class="fam-reset" onclick="exitIndividualView()"><i class="ti ti-arrows-maximize"></i> Back to full map</button>
+  </div>
+</div>
+
+<div id="legend">
+  <div class="leg"><div class="ldot" style="background:#FFD700"></div> You (Me)</div>
+  <div class="leg"><div class="ldot" style="background:#DC143C"></div> Project</div>
+  <div class="leg"><div class="ldot" style="background:#7B68EE"></div> Task (active)</div>
+  <div class="leg"><div class="ldot" style="background:#32CD32"></div> Task (done)</div>
+  <div class="leg"><div class="ldot" style="background:#00BFFF"></div> Step</div>
+  <div class="leg"><div class="ldot" style="background:#FF69B4"></div> Substep</div>
+  <div class="leg"><div class="lline" style="background:#FF6600"></div> Same person</div>
+  <div class="leg" style="margin-top:6px;border-top:1px solid var(--border);padding-top:6px"><div class="ldot" style="background:#FFD700;box-shadow:0 0 6px #FFD700"></div> Selected (locked)</div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────
+var SUPABASE_URL = 'https://ienfjretjvoupzwncnjb.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZqcmV0anZvdXB6d25jbmpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTU4NjcsImV4cCI6MjA5NzM3MTg2N30.zItQB5JjKGaM2gGR4eJWBGX4WGgvc1CEYG9Z1I7yU2A';
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Colors ────────────────────────────────────────────────
+var SELF_COLOR  = '#FFD700';  // Gold
+var SELECTED_COLOR = '#FFD700';
+var PROJ_EN = ['#DC143C','#1E90FF','#228B22','#FF8C00','#9932CC','#008B8B','#FF1493','#4169E1','#8B4513','#2E8B57'];
+var TC  = { active:'#7B68EE', done:'#32CD32', deleg:'#FFA500' };
+var SC  = { active:'#00BFFF', done:'#7FFF00', deleg:'#FFD700' };
+var SBC = { active:'#FF69B4', done:'#ADFF2F' };
+var LC  = { selfProj:'#FFFFFF', taskStep:'#00CFFF', stepSub:'#FF99CC', person:'#FF6600' };
+
+// ── State ─────────────────────────────────────────────────
+var D = {tasks:[],log:[],projects:[]};
+var Graph = null;
+var currentTheme = 'dark';
+var highlightNodes = new Set();
+var highlightLinks = new Set();
+var selectedNode = null;
+var fullGraphData  = null;
+var isIndividualView = false;
+var lastClickNode  = null;
+var lastClickTime  = 0;
+var activeViewMode = 'immediate';
+
+// ── Helpers ───────────────────────────────────────────────
+function xe(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function pct(t){var d=0,tot=0;(t.steps||[]).forEach(function(s){tot++;if(s.done)d++;(s.subs||[]).forEach(function(b){tot++;if(b.done)d++;});});return tot?Math.round(d/tot*100):0;}
+function gp(id){return D.projects.find(function(p){return p.id===id;});}
+
+function brighten(hex, amt) {
+  if(!hex||hex[0]!=='#') return hex;
+  var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,Math.round(r+(255-r)*amt));
+  g=Math.min(255,Math.round(g+(255-g)*amt));
+  b=Math.min(255,Math.round(b+(255-b)*amt));
+  return '#'+r.toString(16).padStart(2,'0')+g.toString(16).padStart(2,'0')+b.toString(16).padStart(2,'0');
+}
+
+function projColor(p, idx) { return p.color || PROJ_EN[idx % PROJ_EN.length]; }
+function taskNodeColor(t) { if(t.done)return TC.done; if((t.steps||[]).some(function(s){return s.delegated;}))return TC.deleg; return TC.active; }
+function stepNodeColor(s) { if(s.done)return SC.done; if(s.delegated)return SC.deleg; return SC.active; }
+
+// ── Build graph ───────────────────────────────────────────
+function buildGraph(){
+  var nodes=[], links=[], projColorMap={};
+
+  nodes.push({id:'__self', name:'Me', type:'self', color:SELF_COLOR, val:50, baseColor:SELF_COLOR});
+
+  D.projects.forEach(function(p,idx){
+    var c = projColor(p,idx);
+    projColorMap[p.id] = c;
+    nodes.push({id:p.id, name:p.name, type:'project', color:c, val:25, proj:p, baseColor:c});
+    links.push({source:'__self', target:p.id, color:c, lw:2, par:0, _type:'h'});
+  });
+
+  D.tasks.forEach(function(t){
+    var tc = taskNodeColor(t);
+    var pc = t.projectId ? (projColorMap[t.projectId]||'#8888AA') : '#8888AA';
+    nodes.push({id:t.id, name:t.title, type:'task', color:tc, val:14, task:t, baseColor:tc});
+    links.push({source:t.projectId||'__self', target:t.id, color:pc, lw:2, par:0, _type:'h'});
+
+    (t.steps||[]).forEach(function(s){
+      var sc = stepNodeColor(s);
+      var sid = t.id+'__s__'+s.id;
+      var slbl = s.text.length>28 ? s.text.slice(0,26)+'…' : s.text;
+      nodes.push({id:sid, name:slbl, type:'step', color:sc, val:8, step:s, task:t, baseColor:sc});
+      links.push({source:t.id, target:sid, color:LC.taskStep, lw:1.5, par:0, _type:'h'});
+      (s.subs||[]).forEach(function(sub){
+        var subc = sub.done ? SBC.done : SBC.active;
+        var subId = sid+'__sub__'+sub.id;
+        var sublbl = sub.text.length>24 ? sub.text.slice(0,22)+'…' : sub.text;
+        nodes.push({id:subId, name:sublbl, type:'substep', color:subc, val:4, sub:sub, step:s, task:t, baseColor:subc});
+        links.push({source:sid, target:subId, color:LC.stepSub, lw:1, par:0, _type:'h'});
+      });
+    });
+  });
+
+  // Cross-links: same assignee
+  var amap={};
+  D.tasks.forEach(function(t){ if(!t.assignee)return; var k=t.assignee.toLowerCase().trim(); if(!amap[k])amap[k]=[]; amap[k].push(t.id); });
+  Object.keys(amap).forEach(function(k){
+    var ids=amap[k]; if(ids.length<2)return;
+    for(var i=0;i<ids.length-1;i++) links.push({source:ids[i],target:ids[i+1],color:LC.person,lw:2,par:4,_type:'person'});
+  });
+
+  // Cross-links: same delegatee
+  var dmap={};
+  D.tasks.forEach(function(t){ (t.steps||[]).forEach(function(s){ if(!s.delegated||!s.delegatedTo)return; var k=s.delegatedTo.toLowerCase().trim(); if(!dmap[k])dmap[k]=[]; if(dmap[k].indexOf(t.id)===-1)dmap[k].push(t.id); }); });
+  Object.keys(dmap).forEach(function(k){
+    var ids=dmap[k]; if(ids.length<2)return;
+    for(var i=0;i<ids.length-1;i++) links.push({source:ids[i],target:ids[i+1],color:LC.person+'BB',lw:1.5,par:2,_type:'deleg'});
+  });
+
+  return {nodes:nodes, links:links};
+}
+
+// ── Family view helpers ───────────────────────────────────
+function getChildIds(node, allLinks){
+  var result=new Set([node.id]); var queue=[node.id];
+  while(queue.length){
+    var curr=queue.shift();
+    allLinks.forEach(function(l){
+      if(l._type!=='h')return;
+      var s=l.source.id!==undefined?l.source.id:l.source;
+      var t=l.target.id!==undefined?l.target.id:l.target;
+      if(s===curr&&!result.has(t)){result.add(t);queue.push(t);}
+    });
+  }
+  return result;
+}
+
+function getParentIds(node, allLinks){
+  var result=new Set([node.id]); var queue=[node.id];
+  while(queue.length){
+    var curr=queue.shift();
+    allLinks.forEach(function(l){
+      if(l._type!=='h')return;
+      var s=l.source.id!==undefined?l.source.id:l.source;
+      var t=l.target.id!==undefined?l.target.id:l.target;
+      if(t===curr&&!result.has(s)){result.add(s);queue.push(s);}
+    });
+  }
+  return result;
+}
+
+function getSiblingIds(node, allLinks){
+  var result=new Set([node.id]);
+  allLinks.forEach(function(l){
+    if(l._type!=='h')return;
+    var s=l.source.id!==undefined?l.source.id:l.source;
+    var t=l.target.id!==undefined?l.target.id:l.target;
+    if(t===node.id){
+      result.add(s);
+      allLinks.forEach(function(l2){
+        if(l2._type!=='h')return;
+        var s2=l2.source.id!==undefined?l2.source.id:l2.source;
+        var t2=l2.target.id!==undefined?l2.target.id:l2.target;
+        if(s2===s)result.add(t2);
+      });
+    }
+  });
+  return result;
+}
+
+function getImmediateIds(node, allLinks){
+  var result=new Set([node.id]);
+  allLinks.forEach(function(l){
+    var s=l.source.id!==undefined?l.source.id:l.source;
+    var t=l.target.id!==undefined?l.target.id:l.target;
+    if(s===node.id)result.add(t);
+    if(t===node.id)result.add(s);
+  });
+  return result;
+}
+
+// ── Highlight ─────────────────────────────────────────────
+function dimColor(isDark){ return isDark?'rgba(30,30,70,0.1)':'rgba(180,185,215,0.16)'; }
+function dimLink(isDark){  return isDark?'rgba(80,80,150,0.06)':'rgba(160,165,200,0.1)'; }
+
+function nodeColorFn(n){
+  if(n===selectedNode) return brighten(n.baseColor||n.color, 0.55);
+  if(!highlightNodes.size) return n.color;
+  return highlightNodes.has(n) ? n.color : dimColor(currentTheme==='dark');
+}
+
+function nodeValFn(n){
+  return n===selectedNode ? (n.val||9)*1.65 : n.val;
+}
+
+function updateHighlight(){
+  var dark=currentTheme==='dark';
+  Graph
+    .nodeColor(nodeColorFn)
+    .nodeVal(nodeValFn)
+    .linkColor(function(l){ if(!highlightLinks.size)return l.color; return highlightLinks.has(l)?l.color:dimLink(dark); })
+    .linkWidth(function(l){ return highlightLinks.has(l)?Math.max(l.lw*2.5,2.5):l.lw; })
+    .linkDirectionalParticles(function(l){ return highlightLinks.has(l)?Math.max((l.par||0),5):(l.par||0); });
+}
+
+// ── Tooltip ───────────────────────────────────────────────
+var TYPE_LABEL={self:'',project:'Project',task:'Task',step:'Step',substep:'Substep'};
+function makeTooltip(n){
+  var tl=TYPE_LABEL[n.type]||'';
+  var html='<div style="font-weight:600;font-size:13px">'+(tl?'<span style="opacity:.55;font-size:10px;font-weight:700;letter-spacing:.07em">'+tl.toUpperCase()+'</span><br>':'')+xe(n.name)+'</div>';
+  if(n===selectedNode) html+='<div style="font-size:10px;margin-top:4px;color:#FFD700">⭐ Selected (locked)</div>';
+  if(n.type==='task'&&n.task){
+    if(n.task.assignee) html+='<div style="margin-top:4px;font-size:11px">👤 '+xe(n.task.assignee)+'</div>';
+    var deleg=(n.task.steps||[]).filter(function(s){return s.delegated;});
+    deleg.forEach(function(s){html+='<div style="font-size:11px;margin-top:2px;color:#FFD700">→ '+xe(s.delegatedTo||'')+'</div>';});
+  }
+  if(n.type==='step'&&n.step&&n.step.delegated&&n.step.delegatedTo)
+    html+='<div style="font-size:11px;margin-top:4px;color:#FFD700">→ '+xe(n.step.delegatedTo)+'</div>';
+  if(n.type==='substep'&&n.task)
+    html+='<div style="font-size:10px;margin-top:4px;opacity:.55">in: '+xe(n.task.title)+'</div>';
+  return html;
+}
+
+// ── Camera ────────────────────────────────────────────────
+function focusNode(node){
+  var dist=130; var hx=node.x||0,hy=node.y||0,hz=node.z||0; var len=Math.hypot(hx,hy,hz)||1;
+  var r=(len+dist)/len;
+  Graph.cameraPosition({x:hx*r,y:hy*r,z:hz*r},{x:hx,y:hy,z:hz},900);
+}
+
+// ── Individual/Family view ────────────────────────────────
+var famBtns={'immediate':'fv-imm','children':'fv-child','parents':'fv-parent','siblings':'fv-sib'};
+var famLabels={'immediate':'Immediate','children':'Children','parents':'Parents','siblings':'Siblings'};
+
+function openFamilyView(mode){
+  if(!selectedNode) return;
+  activeViewMode = mode;
+
+  // Clear active state on all fam buttons
+  Object.keys(famBtns).forEach(function(k){ var el=document.getElementById(famBtns[k]); if(el)el.classList.remove('active'); });
+  var activeBtn=document.getElementById(famBtns[mode]); if(activeBtn)activeBtn.classList.add('active');
+
+  if(!fullGraphData) fullGraphData={
+    nodes:Graph.graphData().nodes.slice(),
+    links:Graph.graphData().links.slice()
+  };
+
+  var allLinks=fullGraphData.links;
+  var connIds;
+  if(mode==='children')      connIds=getChildIds(selectedNode,allLinks);
+  else if(mode==='parents')  connIds=getParentIds(selectedNode,allLinks);
+  else if(mode==='siblings') connIds=getSiblingIds(selectedNode,allLinks);
+  else                        connIds=getImmediateIds(selectedNode,allLinks);
+
+  var filtered={
+    nodes:fullGraphData.nodes.filter(function(n){return connIds.has(n.id);}),
+    links:allLinks.filter(function(l){
+      var s=l.source.id!==undefined?l.source.id:l.source;
+      var t=l.target.id!==undefined?l.target.id:l.target;
+      return connIds.has(s)&&connIds.has(t);
+    })
+  };
+  Graph.graphData(filtered);
+  isIndividualView=true;
+
+  // After graph updates, highlight selected node again
+  setTimeout(updateHighlight, 50);
+
+  document.getElementById('back-full').style.display='flex';
+  var chip=document.getElementById('view-chip');
+  chip.style.display='flex';
+  document.getElementById('view-chip-txt').textContent=famLabels[mode]+' View';
+}
+
+function exitIndividualView(){
+  if(fullGraphData) Graph.graphData(fullGraphData);
+  fullGraphData=null; isIndividualView=false;
+  Object.keys(famBtns).forEach(function(k){var el=document.getElementById(famBtns[k]);if(el)el.classList.remove('active');});
+  highlightNodes.clear(); highlightLinks.clear();
+  updateHighlight();
+  document.getElementById('back-full').style.display='none';
+  document.getElementById('view-chip').style.display='none';
+}
+
+// ── Theme ─────────────────────────────────────────────────
+function toggleTheme(){
+  currentTheme=currentTheme==='dark'?'light':'dark';
+  document.body.className=currentTheme;
+  var btn=document.getElementById('theme-btn');
+  if(currentTheme==='dark'){ btn.innerHTML='<i class="ti ti-sun"></i> Light'; Graph.backgroundColor('#08081A'); }
+  else                      { btn.innerHTML='<i class="ti ti-moon"></i> Dark';  Graph.backgroundColor('#EEF0FA'); }
+  highlightNodes.clear(); highlightLinks.clear();
+  updateHighlight();
+}
+
+// ── Panel ─────────────────────────────────────────────────
+function showPanel(node){
+  selectedNode=node;
+  var c=document.getElementById('pc');
+  var close='<button class="pcls" onclick="closePanel()">×</button>';
+
+  if(node.type==='self'){
+    var active=D.tasks.filter(function(t){return!t.done;}).length;
+    var done=D.tasks.filter(function(t){return t.done;}).length;
+    c.innerHTML=close+
+      '<div style="font-size:28px;margin-bottom:8px">⭐</div>'+
+      '<div class="ptype">WORKSPACE</div>'+
+      '<div class="ptitle">You</div>'+
+      '<div class="srow">'+
+        '<div class="sbox" style="background:rgba(255,215,0,.12)"><div class="snum" style="color:#FFD700">'+active+'</div><div class="slbl">Active</div></div>'+
+        '<div class="sbox" style="background:rgba(50,205,50,.12)"><div class="snum" style="color:#32CD32">'+done+'</div><div class="slbl">Done</div></div>'+
+        '<div class="sbox" style="background:rgba(128,128,200,.1)"><div class="snum" style="color:var(--text)">'+D.projects.length+'</div><div class="slbl">Projects</div></div>'+
+      '</div>';
+  }
+  else if(node.type==='project'){
+    var p=node.proj;
+    var ptasks=D.tasks.filter(function(t){return t.projectId===p.id;});
+    var avg=ptasks.length?Math.round(ptasks.reduce(function(s,t){return s+pct(t);},0)/ptasks.length):0;
+    c.innerHTML=close+
+      '<div class="ptype">PROJECT</div>'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'+
+        '<div style="width:14px;height:14px;border-radius:50%;background:'+p.color+';flex-shrink:0"></div>'+
+        '<div class="ptitle" style="margin:0">'+xe(p.name)+'</div>'+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">'+ptasks.length+' tasks · '+avg+'% overall</div>'+
+      '<div class="pbar"><div class="pbar-fill" style="width:'+avg+'%;background:'+p.color+'"></div></div>'+
+      ptasks.map(function(t){var pp=pct(t);return'<div class="ptcard"><div class="ptname">'+xe(t.title)+'</div>'+
+        '<div class="mbar"><div class="mfill" style="width:'+pp+'%;background:'+(t.done?'#32CD32':'#7B68EE')+'"></div></div></div>';}).join('');
+  }
+  else if(node.type==='task'){
+    var t=node.task, proj=t.projectId?gp(t.projectId):null, pp=pct(t);
+    var curr=(t.steps||[]).find(function(s){return s.current&&!s.done;});
+    var doneS=(t.steps||[]).filter(function(s){return s.done;}).length;
+    var delegSteps=(t.steps||[]).filter(function(s){return s.delegated;});
+    c.innerHTML=close+
+      '<div class="ptype">TASK</div>'+
+      (proj?'<div class="ptag" style="background:'+proj.color+'22;border:1px solid '+proj.color+'44;color:'+proj.color+'">'+xe(proj.name)+'</div>':
+            '<div style="font-size:10px;color:var(--text2);margin-bottom:8px">No project</div>')+
+      '<div class="ptitle">'+xe(t.title)+'</div>'+
+      (t.assignee?'<div class="pmeta" style="color:#FFA500"><i class="ti ti-user"></i> '+xe(t.assignee)+'</div>':'')+
+      (delegSteps.length?'<div class="pmeta" style="color:#FFD700"><i class="ti ti-arrow-forward"></i> '+delegSteps.map(function(s){return xe(s.delegatedTo);}).join(', ')+'</div>':'')+
+      '<div class="pbar-row"><span>Progress</span><span>'+pp+'%</span></div>'+
+      '<div class="pbar"><div class="pbar-fill" style="width:'+pp+'%;background:'+(t.done?'#32CD32':'#7B68EE')+'"></div></div>'+
+      (curr?'<div class="pcurr" style="background:rgba(0,191,255,.1);border:1px solid rgba(0,191,255,.25)">'+
+        '<div class="pcurr-lbl" style="color:#00BFFF">CURRENT STEP</div>'+
+        '<div class="pcurr-txt">'+xe(curr.text)+'</div>'+
+        (curr.delegatedTo?'<div class="pcurr-del" style="color:#FFD700">→ '+xe(curr.delegatedTo)+'</div>':'')+'</div>':'')+
+      '<div class="pstep-hdr">'+doneS+'/'+(t.steps||[]).length+' steps done</div>'+
+      (t.steps||[]).map(function(s){
+        var subHtml=(s.subs||[]).map(function(sub){return'<div class="psub"><div class="psub-c'+(sub.done?' dk':'')+'"></div><span class="psub-t'+(sub.done?' dk':'')+'">'+xe(sub.text)+'</span></div>';}).join('');
+        return'<div class="pstep"><div class="pstep-c'+(s.done?' dk':'')+'"></div>'+
+          '<div><span class="pstep-t'+(s.done?' dk':'')+'">'+xe(s.text)+'</span>'+
+          (s.delegatedTo?'<div style="font-size:10px;color:#FFD700;margin-top:2px">→ '+xe(s.delegatedTo)+'</div>':'')+subHtml+'</div></div>';
+      }).join('');
+  }
+  else if(node.type==='step'){
+    var s2=node.step, t2=node.task;
+    c.innerHTML=close+
+      '<div class="ptype">STEP</div>'+
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:6px">in: '+xe(t2.title)+'</div>'+
+      '<div class="ptitle">'+xe(s2.text)+'</div>'+
+      (s2.delegated&&s2.delegatedTo?'<div class="pmeta" style="color:#FFD700"><i class="ti ti-arrow-forward"></i> '+xe(s2.delegatedTo)+'</div>':'')+
+      '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+(s2.done?'✅ Done':(s2.current?'▶ Current':'⏸ Pending'))+'</div>'+
+      ((s2.subs||[]).length?'<div class="pstep-hdr">Substeps</div>'+(s2.subs||[]).map(function(sub){
+        return'<div class="psub" style="padding-left:0"><div class="psub-c'+(sub.done?' dk':'')+'"></div><span class="psub-t'+(sub.done?' dk':'')+'">'+xe(sub.text)+'</span></div>';
+      }).join(''):'');
+  }
+  else if(node.type==='substep'){
+    var sub3=node.sub, s3=node.step, t3=node.task;
+    c.innerHTML=close+
+      '<div class="ptype">SUBSTEP</div>'+
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">'+xe(t3.title)+' → '+xe(s3.text)+'</div>'+
+      '<div class="ptitle">'+xe(sub3.text)+'</div>'+
+      '<div style="font-size:12px;color:var(--text2)">'+(sub3.done?'✅ Done':'⏸ Pending')+'</div>';
+  }
+
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('sel-strip').classList.add('show');
+  updateHighlight();
+}
+
+function closePanel(){
+  selectedNode=null;
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('sel-strip').classList.remove('show');
+  highlightNodes.clear(); highlightLinks.clear();
+  Object.keys(famBtns).forEach(function(k){var el=document.getElementById(famBtns[k]);if(el)el.classList.remove('active');});
+  updateHighlight();
+  if(isIndividualView) exitIndividualView();
+}
+
+var _hh=false;
+function hideHint(){if(_hh)return;_hh=true;document.getElementById('hint').classList.add('hide');}
+
+// ── Init graph ────────────────────────────────────────────
+function initGraph(data){
+  var el=document.getElementById('graph');
+  Graph=ForceGraph3D()(el)
+    .width(el.offsetWidth||window.innerWidth)
+    .height(el.offsetHeight||window.innerHeight-48)
+    .backgroundColor('#08081A')
+    .graphData(data)
+    .nodeLabel(makeTooltip)
+    .nodeColor(nodeColorFn)
+    .nodeVal(nodeValFn)
+    .nodeOpacity(0.92)
+    .nodeResolution(16)
+    .linkColor(function(l){return l.color;})
+    .linkWidth(function(l){return l.lw;})
+    .linkOpacity(0.9)
+    .linkDirectionalParticles(function(l){return l.par||0;})
+    .linkDirectionalParticleColor(function(l){return l.color;})
+    .linkDirectionalParticleSpeed(0.005)
+    .linkDirectionalParticleWidth(2.5)
+    .onNodeHover(function(node){
+      highlightNodes.clear(); highlightLinks.clear();
+      if(node){
+        highlightNodes.add(node);
+        Graph.graphData().links.forEach(function(l){
+          if(l.source===node||l.target===node){
+            highlightLinks.add(l); highlightNodes.add(l.source); highlightNodes.add(l.target);
+          }
+        });
+      }
+      updateHighlight();
+    })
+    .onNodeClick(function(node){
+      var now=Date.now();
+      if(lastClickNode===node&&now-lastClickTime<400){
+        lastClickNode=null; lastClickTime=0;
+        openFamilyView('immediate'); // default to immediate on double-click
+        return;
+      }
+      lastClickNode=node; lastClickTime=now;
+      focusNode(node);
+      showPanel(node);
+      hideHint();
+    })
+    .onBackgroundClick(closePanel);
+
+  window.addEventListener('resize',function(){Graph.width(el.offsetWidth).height(el.offsetHeight);});
+
+  document.getElementById('status').textContent=D.tasks.length+' tasks · '+D.projects.length+' projects';
+  if(!D.tasks.length&&!D.projects.length) document.getElementById('empty').style.display='flex';
+  setTimeout(function(){document.getElementById('hint').classList.add('hide');},6000);
+}
+
+// ── Load + realtime ───────────────────────────────────────
+async function init(){
+  try{
+    var res=await db.from('chain_state').select('data').eq('id','main').maybeSingle();
+    if(res.error)throw res.error;
+    if(res.data){ D=res.data.data||{tasks:[],log:[],projects:[]}; if(!D.tasks)D.tasks=[]; if(!D.log)D.log=[]; if(!D.projects)D.projects=[]; }
+  }catch(e){ console.error('Load failed:',e); document.getElementById('status').textContent='Load error'; }
+
+  initGraph(buildGraph());
+
+  db.channel('mapv3_sync')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chain_state',filter:'id=eq.main'},function(payload){
+      if(!payload.new||isIndividualView)return;
+      D=payload.new.data||{tasks:[],log:[],projects:[]};
+      if(!D.tasks)D.tasks=[]; if(!D.projects)D.projects=[];
+      highlightNodes.clear(); highlightLinks.clear(); selectedNode=null;
+      Graph.graphData(buildGraph());
+      document.getElementById('status').textContent=D.tasks.length+' tasks · '+D.projects.length+' projects';
+    }).subscribe();
+}
+
+init();
+</script>
+</body>
+</html>
