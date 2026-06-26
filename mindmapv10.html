@@ -619,7 +619,7 @@ function clearChat(){
 }
 
 /* ── Gemini API call via Cloudflare Worker ───────────────── */
-var WORKER_URL = 'https://cold-frog-d555.smworkassistance.workers.dev/';
+var WORKER_URL = 'https://chain.smworkassistance.workers.dev/';
 
 async function callGemini(userMessage){
   var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
