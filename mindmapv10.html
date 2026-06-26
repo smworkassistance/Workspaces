@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Chain AI</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  -webkit-font-smoothing:antialiased;background:#F2F2F7;
+  color:rgba(0,0,0,.87);
+}
+
+/* ── Topbar ── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  height:calc(48px + env(safe-area-inset-top,0px));
+  padding-top:env(safe-area-inset-top,0px);
+  background:rgba(242,242,247,.92);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:.5px solid rgba(60,60,67,.22);
+  display:flex;align-items:center;gap:8px;
+  padding-left:12px;padding-right:12px;
+}
+.btn-back{
+  display:flex;align-items:center;gap:2px;color:#7C6FFF;
+  background:none;border:none;font-size:17px;font-family:inherit;
+  cursor:pointer;padding:6px 4px;touch-action:manipulation;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-back i{font-size:19px}
+#tb-title{font-size:17px;font-weight:700;flex:1;letter-spacing:-.02em;text-align:center}
+.tb-icon-btn{
+  width:34px;height:34px;border:none;background:transparent;
+  border-radius:8px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;color:rgba(60,60,67,.6);font-size:18px;
+  touch-action:manipulation;flex-shrink:0;-webkit-tap-highlight-color:transparent;
+}
+.tb-icon-btn:active{background:rgba(0,0,0,.06)}
+
+/* ── Mobile tabs (visible only on mobile) ── */
+#mob-tabs{
+  display:none;position:fixed;
+  top:calc(48px + env(safe-area-inset-top,0px));
+  left:0;right:0;z-index:40;
+  background:rgba(242,242,247,.95);
+  border-bottom:.5px solid rgba(60,60,67,.18);
+  display:none;
+}
+.mob-tab{
+  flex:1;padding:9px 0;border:none;background:none;
+  font-size:13px;font-weight:600;color:rgba(60,60,67,.5);
+  cursor:pointer;font-family:inherit;letter-spacing:.02em;
+  border-bottom:2px solid transparent;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.mob-tab.active{color:#7C6FFF;border-bottom-color:#7C6FFF}
+
+/* ── Main layout ── */
+#main{
+  display:flex;
+  position:fixed;
+  top:calc(48px + env(safe-area-inset-top,0px));
+  left:0;right:0;
+  bottom:calc(env(safe-area-inset-bottom,0px));
+  overflow:hidden;
+}
+
+/* ── KB Panel (left) ── */
+#kb-panel{
+  width:300px;flex-shrink:0;
+  background:#fff;
+  border-right:.5px solid rgba(60,60,67,.18);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#kb-header{
+  display:flex;align-items:center;gap:8px;
+  padding:14px 14px 10px;
+  border-bottom:.5px solid rgba(60,60,67,.12);flex-shrink:0;
+}
+#kb-header-title{font-size:13px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:rgba(60,60,67,.5);flex:1}
+.btn-add-row{
+  width:28px;height:28px;border-radius:8px;border:1.5px solid #7C6FFF;
+  background:transparent;color:#7C6FFF;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.btn-add-row:active{background:rgba(124,111,255,.1)}
+#kb-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 0}
+
+/* KB rows */
+.kb-row{
+  padding:10px 14px;cursor:pointer;
+  border-bottom:.5px solid rgba(60,60,67,.08);
+  transition:background .1s;
+}
+.kb-row:active{background:rgba(0,0,0,.04)}
+.kb-row.pinned{background:rgba(124,111,255,.04)}
+.kb-row-head{
+  font-size:13px;font-weight:700;color:rgba(0,0,0,.82);
+  margin-bottom:2px;display:flex;align-items:center;gap:6px;
+}
+.kb-row-pin{font-size:10px;color:#7C6FFF;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+  background:rgba(124,111,255,.1);border-radius:4px;padding:1px 5px}
+.kb-row-exp{font-size:12px;color:rgba(60,60,67,.5);line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* ── Chat Panel (right) ── */
+#chat-panel{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:#F2F2F7;
+}
+#chat-toolbar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;background:#fff;
+  border-bottom:.5px solid rgba(60,60,67,.1);flex-shrink:0;
+}
+#chat-toolbar-lbl{font-size:12px;font-weight:600;color:rgba(60,60,67,.4);
+  text-transform:uppercase;letter-spacing:.07em;flex:1}
+.chat-tool-btn{
+  padding:4px 11px;border-radius:8px;border:1px solid rgba(60,60,67,.18);
+  background:transparent;font-size:12px;font-weight:600;
+  color:rgba(60,60,67,.6);cursor:pointer;font-family:inherit;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.chat-tool-btn:active{background:rgba(0,0,0,.05)}
+.chat-tool-btn.accent{border-color:#7C6FFF;color:#7C6FFF}
+#chat-msgs{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:14px 12px;display:flex;flex-direction:column;gap:8px;
+}
+.msg-wrap{display:flex;flex-direction:column;max-width:82%}
+.msg-wrap.user{align-self:flex-end;align-items:flex-end}
+.msg-wrap.ai{align-self:flex-start;align-items:flex-start}
+.msg-bubble{
+  padding:10px 14px;border-radius:18px;
+  font-size:15px;line-height:1.55;word-break:break-word;
+}
+.msg-wrap.user .msg-bubble{
+  background:#7C6FFF;color:#fff;
+  border-bottom-right-radius:4px;
+}
+.msg-wrap.ai .msg-bubble{
+  background:#fff;color:rgba(0,0,0,.85);
+  border-bottom-left-radius:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);
+  white-space:pre-wrap;
+}
+.msg-time{font-size:11px;color:rgba(60,60,67,.35);margin-top:3px;padding:0 4px}
+.msg-ai-label{
+  font-size:11px;font-weight:700;letter-spacing:.06em;
+  color:#7C6FFF;margin-bottom:3px;padding-left:2px;text-transform:uppercase;
+}
+#chat-input-wrap{
+  display:flex;align-items:flex-end;gap:8px;
+  padding:10px 12px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  background:#fff;border-top:.5px solid rgba(60,60,67,.12);flex-shrink:0;
+}
+#chat-input{
+  flex:1;border:1.5px solid rgba(60,60,67,.18);border-radius:20px;
+  padding:9px 14px;font-size:16px;font-family:inherit;
+  background:#F2F2F7;resize:none;outline:none;
+  max-height:120px;overflow-y:auto;line-height:1.45;
+  transition:border-color .15s;
+}
+#chat-input:focus{border-color:#7C6FFF}
+#send-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:#7C6FFF;border:none;color:#fff;
+  font-size:18px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  transition:opacity .15s;
+}
+#send-btn:active{opacity:.75}
+#send-btn:disabled{background:rgba(60,60,67,.18);cursor:default}
+.typing-indicator{
+  display:flex;align-items:center;gap:4px;padding:10px 14px;
+  background:#fff;border-radius:18px;border-bottom-left-radius:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);width:fit-content;
+}
+.typing-dot{
+  width:7px;height:7px;border-radius:50%;background:#7C6FFF;opacity:.5;
+  animation:typingBounce 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2){animation-delay:.18s}
+.typing-dot:nth-child(3){animation-delay:.36s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px);opacity:1}}
+
+/* ── Modals ── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.4);backdrop-filter:blur(4px);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.modal-overlay.hidden{display:none}
+.modal-sheet{
+  width:100%;max-width:540px;
+  background:#fff;border-radius:20px 20px 0 0;
+  padding:20px 20px;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  animation:slideUp .25s cubic-bezier(.4,0,.2,1);
+  max-height:90vh;overflow-y:auto;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:rgba(60,60,67,.18);
+  border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px;text-align:center;letter-spacing:-.02em}
+.modal-label{font-size:13px;font-weight:600;color:rgba(60,60,67,.5);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;margin-top:14px}
+.modal-input{
+  width:100%;padding:11px 14px;border:1.5px solid rgba(60,60,67,.2);
+  border-radius:12px;font-size:16px;font-family:inherit;outline:none;
+  transition:border-color .15s;background:#F2F2F7;
+}
+.modal-input:focus{border-color:#7C6FFF}
+.modal-textarea{
+  width:100%;padding:11px 14px;border:1.5px solid rgba(60,60,67,.2);
+  border-radius:12px;font-size:15px;font-family:inherit;outline:none;
+  resize:none;line-height:1.55;min-height:120px;
+  transition:border-color .15s;background:#F2F2F7;
+}
+.modal-textarea:focus{border-color:#7C6FFF}
+.modal-hint{font-size:12px;color:rgba(60,60,67,.4);margin-top:6px;line-height:1.5}
+.modal-footer{display:flex;gap:10px;margin-top:18px}
+.btn-cancel{
+  flex:1;padding:13px;border-radius:12px;border:1.5px solid rgba(60,60,67,.2);
+  background:transparent;font-size:16px;font-weight:600;color:rgba(60,60,67,.6);
+  cursor:pointer;font-family:inherit;touch-action:manipulation;
+}
+.btn-primary{
+  flex:2;padding:13px;border-radius:12px;border:none;
+  background:#7C6FFF;color:#fff;font-size:16px;font-weight:700;
+  cursor:pointer;font-family:inherit;touch-action:manipulation;
+}
+.btn-primary:active{opacity:.85}
+.btn-del{
+  padding:13px 18px;border-radius:12px;border:1.5px solid rgba(255,59,48,.3);
+  background:transparent;font-size:15px;font-weight:600;color:#FF3B30;
+  cursor:pointer;font-family:inherit;touch-action:manipulation;
+}
+.modal-key-note{
+  background:rgba(124,111,255,.07);border:1px solid rgba(124,111,255,.2);
+  border-radius:10px;padding:10px 12px;font-size:13px;color:rgba(60,60,67,.7);
+  line-height:1.55;margin-top:14px;
+}
+
+/* ── Mobile responsive ── */
+@media(max-width:640px){
+  #mob-tabs{display:flex}
+  #main{top:calc(90px + env(safe-area-inset-top,0px))}
+  #kb-panel{
+    position:absolute;inset:0;width:100%;
+    border-right:none;z-index:1;
+    display:none;
+  }
+  #kb-panel.mob-active{display:flex}
+  #chat-panel{position:absolute;inset:0;display:none}
+  #chat-panel.mob-active{display:flex}
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div id="topbar">
+  <button class="btn-back" onclick="location.href='chain4.html'">
+    <i class="ti ti-chevron-left"></i>Chain
+  </button>
+  <div id="tb-title">⚡ Chain AI</div>
+  <button class="tb-icon-btn" onclick="openSettings()" title="API Key settings">
+    <i class="ti ti-settings"></i>
+  </button>
+</div>
+
+<!-- Mobile tabs -->
+<div id="mob-tabs">
+  <button class="mob-tab active" onclick="mobTab('kb')">Workstyle KB</button>
+  <button class="mob-tab" onclick="mobTab('chat')">AI Chat</button>
+</div>
+
+<!-- Main layout -->
+<div id="main">
+
+  <!-- Left: Knowledge Base -->
+  <div id="kb-panel" class="mob-active">
+    <div id="kb-header">
+      <span id="kb-header-title">Workstyle KB</span>
+      <button class="btn-add-row" onclick="openRowModal()" title="Add row">
+        <i class="ti ti-plus"></i>
+      </button>
+    </div>
+    <div id="kb-list">
+      <div style="padding:20px;text-align:center;color:rgba(60,60,67,.35);font-size:13px">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Right: Chat -->
+  <div id="chat-panel">
+    <div id="chat-toolbar">
+      <span id="chat-toolbar-lbl">Chain AI</span>
+      <button class="chat-tool-btn accent" onclick="injectTasks()">
+        <i class="ti ti-list-check"></i> Load Tasks
+      </button>
+      <button class="chat-tool-btn" onclick="clearChat()">Clear</button>
+    </div>
+    <div id="chat-msgs">
+      <div class="msg-wrap ai">
+        <div class="msg-ai-label">Chain AI</div>
+        <div class="msg-bubble">
+          Hey! I'm your Chain AI assistant. I know your tasks, projects and your workstyle philosophy.<br><br>
+          Tap <strong>Load Tasks</strong> to give me your current task list, then ask me anything — I'll help you move chains forward fast. 🚀
+        </div>
+        <div class="msg-time">Now</div>
+      </div>
+    </div>
+    <div id="chat-input-wrap">
+      <textarea id="chat-input" placeholder="Ask anything about your tasks…" rows="1"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+      <button id="send-btn" onclick="sendMsg()"><i class="ti ti-arrow-up"></i></button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Row edit modal -->
+<div class="modal-overlay hidden" id="row-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="row-modal-title">Add to Workstyle KB</div>
+    <div class="modal-label">Head (Topic Name)</div>
+    <input class="modal-input" id="row-head" placeholder="e.g. Chain, Communication Style…"
+      maxlength="60" autocomplete="off">
+    <div class="modal-label">Explanation</div>
+    <textarea class="modal-textarea" id="row-exp"
+      placeholder="Describe this concept in your own words…" rows="5"></textarea>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeRowModal()">Cancel</button>
+      <button class="btn-del" id="row-del-btn" onclick="deleteRow()" style="display:none">Delete</button>
+      <button class="btn-primary" onclick="saveRow()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings / API key modal -->
+<div class="modal-overlay hidden" id="settings-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">AI Settings</div>
+    <div class="modal-label">Gemini API Key</div>
+    <input class="modal-input" id="api-key-input" type="password"
+      placeholder="Paste your Gemini API key here…" autocomplete="off">
+    <div class="modal-key-note">
+      🔒 Your key is saved only on <strong>this device</strong> (localStorage). It is never sent to Supabase or any server other than Google's Gemini API.
+    </div>
+    <div class="modal-label" style="margin-top:14px">Gemini Model</div>
+    <input class="modal-input" id="model-input" placeholder="gemini-2.5-flash" autocomplete="off">
+    <div class="modal-hint">Default: <code>gemini-2.5-flash</code>. Check Google AI Studio for exact model ID if needed.</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Supabase ────────────────────────────────────────────── */
+var SUPABASE_URL = 'https://ienfjretjvoupzwncnjb.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZqcmV0anZvdXB6d25jbmpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTU4NjcsImV4cCI6MjA5NzM3MTg2N30.zItQB5JjKGaM2gGR4eJWBGX4WGgvc1CEYG9Z1I7yU2A';
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── State ───────────────────────────────────────────────── */
+var kbRows  = [];        /* [{head, explanation, pinned?, id}] */
+var chatLog = [];        /* [{role:'user'|'ai', content, time}] */
+var taskData = null;     /* chain_state data (loaded on demand) */
+var editingRowId = null; /* null = new, else = id of row being edited */
+
+/* ── Default KB rows (seeded once on first load) ─────────── */
+var DEFAULT_ROWS = [
+  {
+    id: 'sys_prompt',
+    head: 'System Prompt',
+    pinned: true,
+    explanation: 'You are a focused work assistant embedded in Chain. You understand the Chain philosophy: every complex task moves forward through sequential steps — next call, next message, next follow-up, next decision. You have the user\'s live tasks and projects. Your job: help complete as many tasks as fast as possible. Always suggest the next specific chain action. Prefer delegation or 2-min quick follow-ups over doing it yourself — delegation is responsibility not avoidance. Time-block heavy work. Be direct and brief — no fluff. End every response with one clear "Next Chain" suggestion. Also motivate the user to use the Clar app as much as possible to stay focused and manifesting — Clar can help manifest what seems impossible.'
+  },
+  {
+    id: 'context',
+    head: 'Context',
+    pinned: true,
+    explanation: 'Add important running context here — ongoing deals, current priorities, things AI should always know. Keep it compact and updated.'
+  },
+  {
+    id: 'chain_philosophy',
+    head: 'Chain',
+    pinned: false,
+    explanation: 'Each task is completed in chains. All new decided steps are added as steps and once a step is done we move to the next until the task is completed. Chain is just the next step — next communication, next follow-up — to bring the result. Chain is a result-oriented philosophy to complete any complex task.'
+  }
+];
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function xe(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+function ts(){
+  var n=new Date();
+  return ('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);
+}
+
+/* ── Load / Save KB ──────────────────────────────────────── */
+async function loadKB(){
+  try{
+    var r = await db.from('chain_ai').select('rows').eq('id','main').maybeSingle();
+    if(r.data && r.data.rows && r.data.rows.length){
+      kbRows = r.data.rows;
+    } else {
+      /* First run — seed defaults */
+      kbRows = DEFAULT_ROWS.map(function(r){ return Object.assign({},r); });
+      await saveKB();
+    }
+  }catch(e){
+    console.error('KB load error',e);
+    kbRows = DEFAULT_ROWS.map(function(r){ return Object.assign({},r); });
+  }
+  renderKB();
+}
+
+async function saveKB(){
+  try{
+    await db.from('chain_ai').upsert({id:'main', rows:kbRows});
+  }catch(e){ console.error('KB save error',e); }
+}
+
+/* ── Render KB ───────────────────────────────────────────── */
+function renderKB(){
+  var pinned = kbRows.filter(function(r){ return r.pinned; });
+  var normal = kbRows.filter(function(r){ return !r.pinned; });
+  var all    = pinned.concat(normal);
+  var el     = document.getElementById('kb-list');
+  if(!all.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:rgba(60,60,67,.35);font-size:13px">No rows yet. Tap + to add.</div>';
+    return;
+  }
+  el.innerHTML = all.map(function(row){
+    return '<div class="kb-row'+(row.pinned?' pinned':'')+'" onclick="openRowModal(\''+xe(row.id)+'\')">' +
+      '<div class="kb-row-head">'+xe(row.head)+(row.pinned?'<span class="kb-row-pin">pinned</span>':'')+
+      (row.id==='sys_prompt'?'<span class="kb-row-pin" style="background:rgba(52,199,89,.12);color:#34C759">AI role</span>':'')+
+      (row.id==='context'?'<span class="kb-row-pin" style="background:rgba(255,149,0,.12);color:#FF9500">context</span>':'')+'</div>'+
+      '<div class="kb-row-exp">'+xe(row.explanation)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ── Row modal ───────────────────────────────────────────── */
+function openRowModal(id){
+  editingRowId = id || null;
+  var modal = document.getElementById('row-modal');
+  var delBtn = document.getElementById('row-del-btn');
+  document.getElementById('row-modal-title').textContent = id ? 'Edit Row' : 'Add to Workstyle KB';
+  if(id){
+    var row = kbRows.find(function(r){ return r.id===id; });
+    if(!row) return;
+    document.getElementById('row-head').value = row.head;
+    document.getElementById('row-exp').value  = row.explanation;
+    /* Don't allow deleting pinned system rows */
+    delBtn.style.display = row.pinned ? 'none' : 'block';
+  } else {
+    document.getElementById('row-head').value = '';
+    document.getElementById('row-exp').value  = '';
+    delBtn.style.display = 'none';
+  }
+  modal.classList.remove('hidden');
+  setTimeout(function(){ document.getElementById('row-head').focus(); },200);
+}
+
+function closeRowModal(){
+  document.getElementById('row-modal').classList.add('hidden');
+  editingRowId = null;
+}
+
+async function saveRow(){
+  var head = document.getElementById('row-head').value.trim();
+  var exp  = document.getElementById('row-exp').value.trim();
+  if(!head || !exp){ alert('Both fields required.'); return; }
+
+  if(editingRowId){
+    var idx = kbRows.findIndex(function(r){ return r.id===editingRowId; });
+    if(idx>-1){ kbRows[idx].head = head; kbRows[idx].explanation = exp; }
+  } else {
+    kbRows.push({id:uid(), head:head, explanation:exp, pinned:false});
+  }
+  await saveKB();
+  renderKB();
+  closeRowModal();
+}
+
+async function deleteRow(){
+  if(!editingRowId) return;
+  if(!confirm('Delete this row?')) return;
+  kbRows = kbRows.filter(function(r){ return r.id!==editingRowId; });
+  await saveKB();
+  renderKB();
+  closeRowModal();
+}
+
+/* ── Settings modal ──────────────────────────────────────── */
+function openSettings(){
+  document.getElementById('api-key-input').value = localStorage.getItem('chain_ai_gemini_key')||'';
+  document.getElementById('model-input').value   = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+function closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
+function saveSettings(){
+  var key   = document.getElementById('api-key-input').value.trim();
+  var model = document.getElementById('model-input').value.trim() || 'gemini-2.5-flash';
+  if(key) localStorage.setItem('chain_ai_gemini_key', key);
+  localStorage.setItem('chain_ai_model', model);
+  closeSettings();
+}
+
+/* ── Load task data ──────────────────────────────────────── */
+async function injectTasks(){
+  var btn = document.querySelector('.chat-tool-btn.accent');
+  btn.textContent='Loading…';btn.disabled=true;
+  try{
+    var r = await db.from('chain_state').select('data').eq('id','main').maybeSingle();
+    if(r.data && r.data.data) taskData = r.data.data;
+    if(!taskData){ taskData={tasks:[],projects:[]}; }
+  }catch(e){ console.error(e); }
+  btn.innerHTML='<i class="ti ti-list-check"></i> Tasks Loaded ✓';
+  btn.disabled=false;
+  btn.style.background='rgba(52,199,89,.1)';btn.style.color='#34C759';btn.style.borderColor='rgba(52,199,89,.35)';
+
+  /* Inject a system message showing task summary */
+  var summary = buildTaskSummary();
+  appendMsg('ai','📋 Tasks loaded! Here\'s what I see:\n\n'+summary+'\n\nWhat do you want to work on first?');
+}
+
+function buildTaskSummary(){
+  if(!taskData||!taskData.tasks||!taskData.tasks.length) return 'No tasks found.';
+  var active = taskData.tasks.filter(function(t){return!t.done;});
+  var done   = taskData.tasks.filter(function(t){return t.done;});
+  var lines  = ['Active tasks: '+active.length+' | Done: '+done.length];
+  var projects = (taskData.projects||[]);
+  projects.forEach(function(p){
+    var pt = active.filter(function(t){return t.projectId===p.id;});
+    if(pt.length){
+      lines.push('\n📁 '+p.name+' ('+pt.length+' active):');
+      pt.forEach(function(t){
+        var stepsDone = (t.steps||[]).filter(function(s){return s.done;}).length;
+        var stepsTotal= (t.steps||[]).length;
+        lines.push('  • '+t.title+(stepsTotal?' ['+stepsDone+'/'+stepsTotal+' steps]':''));
+      });
+    }
+  });
+  var standalone = active.filter(function(t){return!t.projectId;});
+  if(standalone.length){
+    lines.push('\n📌 No project:');
+    standalone.forEach(function(t){ lines.push('  • '+t.title); });
+  }
+  return lines.join('\n');
+}
+
+/* ── Chat ────────────────────────────────────────────────── */
+function appendMsg(role, content){
+  var wrap = document.createElement('div');
+  wrap.className = 'msg-wrap '+role;
+  var t = ts();
+  if(role==='ai') wrap.innerHTML='<div class="msg-ai-label">Chain AI</div>';
+  wrap.innerHTML += '<div class="msg-bubble">'+xe(content).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="msg-time">'+t+'</div>';
+  document.getElementById('chat-msgs').appendChild(wrap);
+  chatLog.push({role:role,content:content,time:t});
+  document.getElementById('chat-msgs').scrollTop = 999999;
+}
+
+function showTyping(){
+  var el = document.createElement('div');
+  el.className='msg-wrap ai';el.id='typing-wrap';
+  el.innerHTML='<div class="msg-ai-label">Chain AI</div>'+
+    '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  document.getElementById('chat-msgs').appendChild(el);
+  document.getElementById('chat-msgs').scrollTop=999999;
+}
+function hideTyping(){ var el=document.getElementById('typing-wrap');if(el)el.remove(); }
+
+async function sendMsg(){
+  var input = document.getElementById('chat-input');
+  var txt   = input.value.trim();
+  if(!txt) return;
+
+  var key = localStorage.getItem('chain_ai_gemini_key');
+  if(!key){
+    openSettings();
+    alert('Please add your Gemini API key first.');
+    return;
+  }
+
+  input.value=''; input.style.height='auto';
+  document.getElementById('send-btn').disabled=true;
+  appendMsg('user',txt);
+  showTyping();
+
+  try{
+    var reply = await callGemini(txt);
+    hideTyping();
+    appendMsg('ai',reply);
+  }catch(e){
+    hideTyping();
+    appendMsg('ai','⚠️ Error: '+e.message+'. Check your API key in Settings.');
+  }
+  document.getElementById('send-btn').disabled=false;
+}
+
+function clearChat(){
+  chatLog=[];taskData=null;
+  var msgsEl = document.getElementById('chat-msgs');
+  msgsEl.innerHTML='<div class="msg-wrap ai"><div class="msg-ai-label">Chain AI</div>'+
+    '<div class="msg-bubble">Chat cleared. Tap Load Tasks to start fresh. 🚀</div>'+
+    '<div class="msg-time">'+ts()+'</div></div>';
+  var btn = document.querySelector('.chat-tool-btn.accent');
+  btn.innerHTML='<i class="ti ti-list-check"></i> Load Tasks';
+  btn.style.cssText='';
+}
+
+/* ── Gemini API call ─────────────────────────────────────── */
+async function callGemini(userMessage){
+  var key   = localStorage.getItem('chain_ai_gemini_key');
+  var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
+
+  /* Build system instruction from KB rows */
+  var sysRow = kbRows.find(function(r){ return r.id==='sys_prompt'; });
+  var sysText = sysRow ? sysRow.explanation : 'You are a focused work assistant.';
+
+  /* Append all other KB rows as philosophy context */
+  var philRows = kbRows.filter(function(r){ return r.id!=='sys_prompt'; });
+  if(philRows.length){
+    sysText += '\n\n## My Workstyle Knowledge Base\n';
+    philRows.forEach(function(r){
+      sysText += '\n### '+r.head+'\n'+r.explanation;
+    });
+  }
+
+  /* Append task data if loaded */
+  if(taskData && taskData.tasks && taskData.tasks.length){
+    sysText += '\n\n## Current Task Data\n'+buildTaskSummary();
+  }
+
+  /* Build conversation history (last 20 turns) */
+  var history = chatLog.slice(-20);
+  var contents = history.map(function(m){
+    return {role: m.role==='ai'?'model':'user', parts:[{text:m.content}]};
+  });
+  /* Add current message */
+  contents.push({role:'user', parts:[{text:userMessage}]});
+
+  var body = {
+    system_instruction:{ parts:[{text:sysText}] },
+    contents: contents,
+    generationConfig:{ maxOutputTokens:1024, temperature:0.7 }
+  };
+
+  var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
+  var res = await fetch(endpoint,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+
+  if(!res.ok){
+    var err = await res.json().catch(function(){return{};});
+    throw new Error((err.error&&err.error.message)||'API error '+res.status);
+  }
+
+  var data = await res.json();
+  var text = data.candidates&&data.candidates[0]&&
+             data.candidates[0].content&&data.candidates[0].content.parts&&
+             data.candidates[0].content.parts[0]&&
+             data.candidates[0].content.parts[0].text;
+  return text || 'No response from model.';
+}
+
+/* ── Mobile tabs ─────────────────────────────────────────── */
+function mobTab(tab){
+  document.getElementById('kb-panel').classList.toggle('mob-active', tab==='kb');
+  document.getElementById('chat-panel').classList.toggle('mob-active', tab==='chat');
+  document.querySelectorAll('.mob-tab').forEach(function(b,i){
+    b.classList.toggle('active', (i===0&&tab==='kb')||(i===1&&tab==='chat'));
+  });
+}
+
+/* ── Click-outside to close modals ──────────────────────── */
+document.getElementById('row-modal').addEventListener('click',function(e){
+  if(e.target===this) closeRowModal();
+});
+document.getElementById('settings-modal').addEventListener('click',function(e){
+  if(e.target===this) closeSettings();
+});
+
+/* ── Boot ────────────────────────────────────────────────── */
+loadKB();
+
+/* Prompt for API key on first visit */
+if(!localStorage.getItem('chain_ai_gemini_key')){
+  setTimeout(openSettings, 800);
+}
+</script>
+</body>
+</html>
