@@ -1088,9 +1088,17 @@ function renderProjects() {
           '<span class="proj-dd-label">'+xe(ddLabel)+'</span>'+
           '<i class="ti ti-chevron-down proj-dd-chev" id="proj-dd-chev"></i>'+
         '</button>'+
-        '<div class="proj-dd-panel" id="proj-dd-panel">'+items+'</div>'+
       '</div>'+
       addBtn;
+
+    /* Portal: render panel at body level to escape sidebar stacking context */
+    var existingPanel = document.getElementById('proj-dd-panel');
+    if (existingPanel) existingPanel.remove();
+    var panelEl = document.createElement('div');
+    panelEl.className = 'proj-dd-panel';
+    panelEl.id = 'proj-dd-panel';
+    panelEl.innerHTML = items;
+    document.body.appendChild(panelEl);
     return;
   }
 
