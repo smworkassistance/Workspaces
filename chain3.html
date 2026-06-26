@@ -208,6 +208,9 @@ body{
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   color:var(--text);
 }
+.tr-name.expanded{
+  white-space:normal;overflow:visible;text-overflow:clip;
+}
 .tr-meta{
   font-size:12px;color:var(--muted);
   margin-top:2px;
@@ -976,7 +979,7 @@ function taskRowHtml(t) {
   return '<div class="'+cls+'" onclick="sel(\''+t.id+'\')" >'+
     '<div class="tr-dot" style="background:'+dot+'"></div>'+
     '<div class="tr-body">'+
-      '<div class="tr-name">'+xe(t.title)+'</div>'+
+      '<div class="tr-name" onclick="event.stopPropagation();this.classList.toggle(\'expanded\')">'+xe(t.title)+'</div>'+
       '<div class="tr-meta">'+meta+'</div>'+
     '</div>'+
     '<div class="tr-prog"><div class="tr-fill'+(t.done?' tr-fill-done':'')+'" style="width:'+p+'%"></div></div>'+
@@ -1476,6 +1479,19 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
     var sw = localStorage.getItem('chain3_sw');
     if(sw && window.innerWidth > 640) sidebar.style.width = sw+'px';
   }catch(e){}
+})();
+
+/* Prevent pinch-zoom and double-tap zoom in PWA */
+(function(){
+  document.addEventListener('touchmove', function(e){
+    if(e.touches.length > 1) e.preventDefault();
+  }, {passive:false});
+  var lastTap = 0;
+  document.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if(now - lastTap < 300 && !e.target.closest('.tr-name')) e.preventDefault();
+    lastTap = now;
+  }, {passive:false});
 })();
 
 (async function(){
