@@ -254,6 +254,62 @@ html,body{
   line-height:1.55;margin-top:14px;
 }
 
+/* ── Log panel ── */
+#log-panel{
+  width:280px;flex-shrink:0;
+  background:#FAFAFA;
+  border-left:.5px solid rgba(60,60,67,.12);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#log-header{
+  display:flex;align-items:center;gap:8px;
+  padding:14px 14px 10px;
+  border-bottom:.5px solid rgba(60,60,67,.12);flex-shrink:0;
+}
+#log-header-title{font-size:13px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:rgba(60,60,67,.5);flex:1}
+.btn-summarise{
+  padding:3px 10px;border-radius:7px;border:1.5px solid #7C6FFF;
+  background:transparent;color:#7C6FFF;font-size:11px;font-weight:700;
+  cursor:pointer;touch-action:manipulation;font-family:inherit;
+  letter-spacing:.03em;-webkit-tap-highlight-color:transparent;
+}
+.btn-summarise:active{background:rgba(124,111,255,.1)}
+#log-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 0}
+
+/* Log sections */
+.log-section-hdr{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:rgba(60,60,67,.4);
+  padding:10px 14px 4px;
+}
+.log-entry{
+  padding:8px 14px;border-bottom:.5px solid rgba(60,60,67,.06);
+}
+.log-entry-time{font-size:11px;color:rgba(60,60,67,.35);margin-bottom:2px}
+.log-entry-text{font-size:13px;color:rgba(0,0,0,.75);line-height:1.45}
+.log-entry-tag{
+  display:inline-block;font-size:10px;font-weight:700;
+  border-radius:4px;padding:1px 5px;margin-right:4px;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.tag-done{background:rgba(52,199,89,.12);color:#34C759}
+.tag-step{background:rgba(124,111,255,.1);color:#7C6FFF}
+.tag-task{background:rgba(255,149,0,.12);color:#FF9500}
+.tag-week{background:rgba(90,200,250,.12);color:#32ADE6}
+.tag-month{background:rgba(255,59,48,.08);color:#FF3B30}
+
+.log-summary-card{
+  margin:6px 14px;padding:10px 12px;
+  background:#fff;border-radius:10px;
+  border:.5px solid rgba(60,60,67,.1);
+  font-size:12.5px;color:rgba(0,0,0,.7);line-height:1.5;
+}
+.log-summary-label{font-size:11px;font-weight:700;color:rgba(60,60,67,.4);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.log-empty{padding:24px 14px;text-align:center;
+  font-size:13px;color:rgba(60,60,67,.3);line-height:1.6}
+
 /* ── Mobile responsive ── */
 @media(max-width:640px){
   #mob-tabs{display:flex}
@@ -266,6 +322,8 @@ html,body{
   #kb-panel.mob-active{display:flex}
   #chat-panel{position:absolute;inset:0;display:none}
   #chat-panel.mob-active{display:flex}
+  #log-panel{position:absolute;inset:0;width:100%;border-left:none;display:none}
+  #log-panel.mob-active{display:flex}
 }
 </style>
 </head>
@@ -284,8 +342,9 @@ html,body{
 
 <!-- Mobile tabs -->
 <div id="mob-tabs">
-  <button class="mob-tab active" onclick="mobTab('kb')">Workstyle KB</button>
+  <button class="mob-tab active" onclick="mobTab('kb')">KB</button>
   <button class="mob-tab" onclick="mobTab('chat')">AI Chat</button>
+  <button class="mob-tab" onclick="mobTab('log')">Log</button>
 </div>
 
 <!-- Main layout -->
@@ -304,7 +363,18 @@ html,body{
     </div>
   </div>
 
-  <!-- Right: Chat -->
+  <!-- Right: Log -->
+  <div id="log-panel">
+    <div id="log-header">
+      <span id="log-header-title">Action Log</span>
+      <button class="btn-summarise" onclick="summariseWeek()">Summarise Week</button>
+    </div>
+    <div id="log-body">
+      <div class="log-empty">No actions yet.<br>Once AI starts editing your tasks,<br>everything will be logged here.</div>
+    </div>
+  </div>
+
+  <!-- Chat -->
   <div id="chat-panel">
     <div id="chat-toolbar">
       <span id="chat-toolbar-lbl">Chain AI</span>
@@ -410,6 +480,121 @@ function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toStrin
 function ts(){
   var n=new Date();
   return ('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);
+}
+
+/* ── Log state ───────────────────────────────────────────── */
+var logData = { raw:[], weekly:[], monthly:[] };
+
+async function loadLog(){
+  try{
+    var r = await db.from('chain_ai').select('log').eq('id','main').maybeSingle();
+    if(r.data && r.data.log) logData = Object.assign({raw:[],weekly:[],monthly:[]}, r.data.log);
+  }catch(e){ console.error('log load',e); }
+  renderLog();
+}
+
+async function saveLog(){
+  try{ await db.from('chain_ai').upsert({id:'main', log:logData}); }
+  catch(e){ console.error('log save',e); }
+}
+
+function appendLog(type, text){
+  /* type: 'done'|'step'|'task' */
+  var entry = { type:type, text:text, time: new Date().toISOString() };
+  logData.raw.unshift(entry);
+  if(logData.raw.length > 50) logData.raw = logData.raw.slice(0,50);
+  saveLog();
+  renderLog();
+}
+
+function renderLog(){
+  var el = document.getElementById('log-body');
+  var parts = [];
+
+  /* Raw entries */
+  if(logData.raw.length){
+    parts.push('<div class="log-section-hdr">This Week</div>');
+    logData.raw.forEach(function(e){
+      var d = new Date(e.time);
+      var label = ('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+
+                  ' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+      var tag = e.type==='done'?'<span class="log-entry-tag tag-done">Done</span>':
+                e.type==='step'?'<span class="log-entry-tag tag-step">Step</span>':
+                '<span class="log-entry-tag tag-task">Task</span>';
+      parts.push('<div class="log-entry"><div class="log-entry-time">'+label+'</div>'+
+        '<div class="log-entry-text">'+tag+xe(e.text)+'</div></div>');
+    });
+  }
+
+  /* Weekly summaries */
+  if(logData.weekly.length){
+    parts.push('<div class="log-section-hdr" style="margin-top:8px">Weekly Summaries</div>');
+    logData.weekly.forEach(function(w){
+      parts.push('<div class="log-summary-card">'+
+        '<div class="log-summary-label"><span class="log-entry-tag tag-week">Week</span>'+xe(w.week)+'</div>'+
+        xe(w.summary)+'</div>');
+    });
+  }
+
+  /* Monthly summaries */
+  if(logData.monthly.length){
+    parts.push('<div class="log-section-hdr" style="margin-top:8px">Monthly Summaries</div>');
+    logData.monthly.forEach(function(m){
+      parts.push('<div class="log-summary-card">'+
+        '<div class="log-summary-label"><span class="log-entry-tag tag-month">Month</span>'+xe(m.month)+'</div>'+
+        xe(m.summary)+'</div>');
+    });
+  }
+
+  if(!parts.length){
+    el.innerHTML='<div class="log-empty">No actions yet.<br>Once AI starts editing your tasks,<br>everything will be logged here.</div>';
+    return;
+  }
+  el.innerHTML = parts.join('');
+}
+
+async function summariseWeek(){
+  if(!logData.raw.length){ alert('No raw actions to summarise yet.'); return; }
+  var btn = document.querySelector('.btn-summarise');
+  btn.textContent='Summarising…'; btn.disabled=true;
+
+  var rawText = logData.raw.map(function(e){
+    return new Date(e.time).toLocaleDateString()+': '+e.text;
+  }).join('\n');
+
+  var prompt = 'Summarise the following task actions from this week into 2-3 concise sentences. Focus on what was accomplished:\n\n'+rawText;
+
+  try{
+    var summary = await callGemini(prompt);
+    /* Build week label */
+    var oldest = new Date(logData.raw[logData.raw.length-1].time);
+    var newest = new Date(logData.raw[0].time);
+    var weekLabel = oldest.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+
+                    ' – '+newest.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+
+    logData.weekly.unshift({ week: weekLabel, summary: summary });
+    logData.raw = []; /* clear raw */
+
+    /* If 4+ weeklies exist, compress to monthly */
+    if(logData.weekly.length >= 4) await compressToMonthly();
+    else { await saveLog(); renderLog(); }
+
+  }catch(e){ alert('Summarise failed: '+e.message); }
+  btn.textContent='Summarise Week'; btn.disabled=false;
+}
+
+async function compressToMonthly(){
+  var weeklyText = logData.weekly.map(function(w){ return w.week+': '+w.summary; }).join('\n');
+  var prompt = 'Summarise these weekly work summaries into one concise monthly summary (3-4 sentences):\n\n'+weeklyText;
+  try{
+    var summary = await callGemini(prompt);
+    var monthLabel = new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+    logData.monthly.unshift({ month: monthLabel, summary: summary });
+    logData.weekly = []; /* clear weeklies */
+    /* Cap at 6 months */
+    if(logData.monthly.length > 6) logData.monthly = logData.monthly.slice(0,6);
+    await saveLog(); renderLog();
+  }catch(e){ console.error('monthly compress',e); }
 }
 
 /* ── Load / Save KB ──────────────────────────────────────── */
@@ -679,8 +864,10 @@ async function callGemini(userMessage){
 function mobTab(tab){
   document.getElementById('kb-panel').classList.toggle('mob-active', tab==='kb');
   document.getElementById('chat-panel').classList.toggle('mob-active', tab==='chat');
+  document.getElementById('log-panel').classList.toggle('mob-active', tab==='log');
   document.querySelectorAll('.mob-tab').forEach(function(b,i){
-    b.classList.toggle('active', (i===0&&tab==='kb')||(i===1&&tab==='chat'));
+    b.classList.toggle('active',
+      (i===0&&tab==='kb')||(i===1&&tab==='chat')||(i===2&&tab==='log'));
   });
 }
 
@@ -694,6 +881,7 @@ document.getElementById('settings-modal').addEventListener('click',function(e){
 
 /* ── Boot ────────────────────────────────────────────────── */
 loadKB();
+loadLog();
 </script>
 </body>
 </html>
