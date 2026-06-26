@@ -352,20 +352,17 @@ html,body{
   </div>
 </div>
 
-<!-- Settings / API key modal -->
+<!-- Settings modal -->
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">AI Settings</div>
-    <div class="modal-label">Gemini API Key</div>
-    <input class="modal-input" id="api-key-input" type="password"
-      placeholder="Paste your Gemini API key here…" autocomplete="off">
-    <div class="modal-key-note">
-      🔒 Your key is saved only on <strong>this device</strong> (localStorage). It is never sent to Supabase or any server other than Google's Gemini API.
-    </div>
-    <div class="modal-label" style="margin-top:14px">Gemini Model</div>
+    <div class="modal-label">Gemini Model</div>
     <input class="modal-input" id="model-input" placeholder="gemini-2.5-flash" autocomplete="off">
-    <div class="modal-hint">Default: <code>gemini-2.5-flash</code>. Check Google AI Studio for exact model ID if needed.</div>
+    <div class="modal-hint">Default: <code>gemini-2.5-flash</code>. Calls via your Cloudflare Worker — no key needed here.</div>
+    <div class="modal-key-note" style="margin-top:14px">
+      🔒 API key is secured in your Cloudflare Worker. This app never handles the key directly.
+    </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
       <button class="btn-primary" onclick="saveSettings()">Save</button>
@@ -513,15 +510,12 @@ async function deleteRow(){
 
 /* ── Settings modal ──────────────────────────────────────── */
 function openSettings(){
-  document.getElementById('api-key-input').value = localStorage.getItem('chain_ai_gemini_key')||'';
-  document.getElementById('model-input').value   = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
+  document.getElementById('model-input').value = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
   document.getElementById('settings-modal').classList.remove('hidden');
 }
 function closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
 function saveSettings(){
-  var key   = document.getElementById('api-key-input').value.trim();
   var model = document.getElementById('model-input').value.trim() || 'gemini-2.5-flash';
-  if(key) localStorage.setItem('chain_ai_gemini_key', key);
   localStorage.setItem('chain_ai_model', model);
   closeSettings();
 }
@@ -597,13 +591,6 @@ async function sendMsg(){
   var txt   = input.value.trim();
   if(!txt) return;
 
-  var key = localStorage.getItem('chain_ai_gemini_key');
-  if(!key){
-    openSettings();
-    alert('Please add your Gemini API key first.');
-    return;
-  }
-
   input.value=''; input.style.height='auto';
   document.getElementById('send-btn').disabled=true;
   appendMsg('user',txt);
@@ -615,7 +602,7 @@ async function sendMsg(){
     appendMsg('ai',reply);
   }catch(e){
     hideTyping();
-    appendMsg('ai','⚠️ Error: '+e.message+'. Check your API key in Settings.');
+    appendMsg('ai','⚠️ Error: '+e.message);
   }
   document.getElementById('send-btn').disabled=false;
 }
@@ -631,16 +618,17 @@ function clearChat(){
   btn.style.cssText='';
 }
 
-/* ── Gemini API call ─────────────────────────────────────── */
+/* ── Gemini API call via Cloudflare Worker ───────────────── */
+var WORKER_URL = 'https://cold-frog-d555.smworkassistance.workers.dev/';
+
 async function callGemini(userMessage){
-  var key   = localStorage.getItem('chain_ai_gemini_key');
   var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
 
   /* Build system instruction from KB rows */
   var sysRow = kbRows.find(function(r){ return r.id==='sys_prompt'; });
   var sysText = sysRow ? sysRow.explanation : 'You are a focused work assistant.';
 
-  /* Append all other KB rows as philosophy context */
+  /* Append all other KB rows as workstyle context */
   var philRows = kbRows.filter(function(r){ return r.id!=='sys_prompt'; });
   if(philRows.length){
     sysText += '\n\n## My Workstyle Knowledge Base\n';
@@ -659,17 +647,16 @@ async function callGemini(userMessage){
   var contents = history.map(function(m){
     return {role: m.role==='ai'?'model':'user', parts:[{text:m.content}]};
   });
-  /* Add current message */
   contents.push({role:'user', parts:[{text:userMessage}]});
 
   var body = {
+    _model: model,
     system_instruction:{ parts:[{text:sysText}] },
     contents: contents,
     generationConfig:{ maxOutputTokens:1024, temperature:0.7 }
   };
 
-  var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
-  var res = await fetch(endpoint,{
+  var res = await fetch(WORKER_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(body)
@@ -707,11 +694,6 @@ document.getElementById('settings-modal').addEventListener('click',function(e){
 
 /* ── Boot ────────────────────────────────────────────────── */
 loadKB();
-
-/* Prompt for API key on first visit */
-if(!localStorage.getItem('chain_ai_gemini_key')){
-  setTimeout(openSettings, 800);
-}
 </script>
 </body>
 </html>
