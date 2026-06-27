@@ -99,9 +99,12 @@ body{
   width:7px;height:7px;border-radius:50%;
   background:#ccc;flex-shrink:0;transition:background .3s;
 }
-#sync-dot.ok{background:var(--green)}
-#sync-dot.saving{background:var(--amber)}
-#sync-dot.err{background:var(--red)}
+#sync-dot.ok     {background:var(--green)}
+#sync-dot.saving {background:var(--amber)}
+#sync-dot.local  {background:var(--amber);animation:pulse-dot 1.2s infinite}
+#sync-dot.err    {background:var(--red)}
+#sync-dot.offline{background:var(--red)}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* ── Floating Action Button ─────────────────────────────── */
 #fab{
@@ -882,7 +885,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   <a href="chain.html" class="bn-item active"><i class="ti ti-home"></i><span>Chain</span></a>
   <a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
   <a href="calendar.html" class="bn-item"><i class="ti ti-calendar"></i><span>Calendar</span></a>
-  <a href="mindmapv19.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
+  <a href="mindmapv20.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
 </nav>
 
 <!-- Task Modal -->
@@ -944,39 +947,97 @@ var editProjId = null;
 var dragSrc = null;
 var xsubs = {};
 
+/* ── Offline-first persistence ──────────────────────────── */
+var LOCAL_KEY = 'chain_local_v1';
+var _cloudPending = false;
+var saveTimer;
+
 function dotState(s) {
   var el = document.getElementById('sync-dot');
   el.className = s;
-  el.title = s==='ok'?'Synced':s==='saving'?'Saving…':'Sync error';
+  el.title = {
+    ok:'Synced to cloud', saving:'Saving…', local:'Saved locally – will sync when online',
+    offline:'Offline – changes saved locally', err:'Sync error'
+  }[s] || '';
 }
 
-async function ld() {
-  dotState('saving');
-  var res = await db.from('chain_state').select('data').eq('id', STATE_ROW).maybeSingle();
-  if (res.error) { console.error('Load error:', res.error); dotState('err'); return; }
-  if (res.data) {
-    D = res.data.data || {tasks:[],log:[],projects:[]};
-  } else {
-    D = {tasks:[],log:[],projects:[]};
-    await db.from('chain_state').insert({id:STATE_ROW, data:D, client_id:clientId});
-  }
-  if (!D.tasks)    D.tasks    = [];
-  if (!D.log)      D.log      = [];
-  if (!D.projects) D.projects = [];
-  dotState('ok');
-}
-
-var saveTimer;
+/* Write to localStorage instantly, then push to cloud (debounced) */
 function sv() {
-  dotState('saving');
+  D._ts = Date.now();
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(D)); } catch(e) {}
+  dotState('local');
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(async function() {
+  saveTimer = setTimeout(pushToCloud, 900);
+}
+
+async function pushToCloud() {
+  if (!navigator.onLine) { _cloudPending = true; dotState('offline'); return; }
+  try {
     var res = await db.from('chain_state').upsert({
       id:STATE_ROW, data:D, client_id:clientId, updated_at:new Date().toISOString()
     });
-    dotState(res.error?'err':'ok');
-    if (res.error) console.error('Save error:', res.error);
-  }, 200);
+    if (res.error) throw res.error;
+    _cloudPending = false;
+    dotState('ok');
+    setTimeout(function(){ if(document.getElementById('sync-dot').className==='ok') dotState('ok'); }, 2000);
+  } catch(e) {
+    _cloudPending = true;
+    dotState('offline');
+    console.error('Cloud sync error:', e);
+  }
+}
+
+/* Auto-sync when network comes back */
+window.addEventListener('online',  function(){ if (_cloudPending) pushToCloud(); });
+window.addEventListener('offline', function(){ dotState('offline'); });
+
+function ensureDefaults() {
+  if (!D.tasks)    D.tasks    = [];
+  if (!D.log)      D.log      = [];
+  if (!D.projects) D.projects = [];
+}
+
+async function ld() {
+  /* 1. Load local data immediately so the UI is never blank */
+  var localStr = localStorage.getItem(LOCAL_KEY);
+  if (localStr) {
+    try { D = JSON.parse(localStr); ensureDefaults(); } catch(e) {}
+  }
+
+  /* 2. Try Supabase – use whichever is newer */
+  if (!navigator.onLine) { dotState('offline'); return; }
+  dotState('saving');
+  try {
+    var res = await db.from('chain_state').select('data').eq('id', STATE_ROW).maybeSingle();
+    if (res.error) throw res.error;
+    if (res.data && res.data.data) {
+      var cloud = res.data.data;
+      /* Use cloud if no local timestamp or cloud is newer */
+      if (!D._ts || !cloud._ts || cloud._ts >= D._ts) {
+        D = cloud;
+        ensureDefaults();
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(D));
+      } else {
+        /* Local is newer (offline edits) – push local to cloud */
+        _cloudPending = true;
+        pushToCloud();
+        return;
+      }
+    } else {
+      /* No cloud row yet */
+      if (D.tasks && D.tasks.length) {
+        /* We have local data – push it up */
+        _cloudPending = true; pushToCloud();
+      } else {
+        D = {tasks:[],log:[],projects:[]};
+        await db.from('chain_state').insert({id:STATE_ROW, data:D, client_id:clientId});
+      }
+    }
+    dotState('ok');
+  } catch(e) {
+    console.error('Load error:', e);
+    dotState(localStr ? 'offline' : 'err');
+  }
 }
 
 function startRealtime() {
@@ -985,9 +1046,8 @@ function startRealtime() {
       function(payload) {
         if (!payload.new || payload.new.client_id===clientId) return;
         D = payload.new.data || {tasks:[],log:[],projects:[]};
-        if (!D.tasks)    D.tasks    = [];
-        if (!D.log)      D.log      = [];
-        if (!D.projects) D.projects = [];
+        ensureDefaults();
+        try { localStorage.setItem(LOCAL_KEY, JSON.stringify(D)); } catch(e) {}
         render();
       })
     .subscribe();
@@ -1745,12 +1805,16 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
 })();
 
 (async function(){
-  document.getElementById('detail').innerHTML=
-    '<div class="no-detail"><i class="ti ti-loader spinning"></i><p>Connecting…</p></div>';
+  /* Show loading only if no local cache exists */
+  var hasLocal = !!localStorage.getItem(LOCAL_KEY);
+  if (!hasLocal) {
+    document.getElementById('detail').innerHTML=
+      '<div class="no-detail"><i class="ti ti-loader spinning"></i><p>Connecting…</p></div>';
+  }
   await ld();
-  if(D.tasks.length) aid=D.tasks[0].id;
+  if (D.tasks && D.tasks.length) aid = D.tasks[0].id;
   render();
-  startRealtime();
+  if (navigator.onLine) startRealtime();
 })();
 </script>
 </body>
