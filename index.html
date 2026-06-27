@@ -239,6 +239,24 @@ body{
   border-radius:var(--r-md);overflow:hidden;
   border:0.5px solid var(--border-strong);
 }
+/* ── iOS-style swipe to reveal ────────────────────────────── */
+.sw-wrap{position:relative;overflow:hidden}
+.sw-btns{
+  position:absolute;right:0;top:0;bottom:0;
+  display:flex;z-index:0;
+}
+.sw-btn{
+  width:68px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;
+  border:none;cursor:pointer;font-size:11px;font-weight:700;
+  font-family:var(--font);color:#fff;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;letter-spacing:.02em;
+}
+.sw-btn i{font-size:20px}
+.sw-edit{background:#007AFF}
+.sw-del {background:#FF3B30}
+.sw-inner{transform:translateX(0);position:relative;z-index:1;background:var(--surface)}
+
 .task-row{
   display:flex;align-items:center;gap:10px;
   padding:10px 10px 10px 10px;
@@ -864,7 +882,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   <a href="chain.html" class="bn-item active"><i class="ti ti-home"></i><span>Chain</span></a>
   <a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
   <a href="calendar.html" class="bn-item"><i class="ti ti-calendar"></i><span>Calendar</span></a>
-  <a href="mindmapv16.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
+  <a href="mindmapv19.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
 </nav>
 
 <!-- Task Modal -->
@@ -1026,6 +1044,124 @@ function toggleProjCollapse(id) {
 
 function isMob() { return window.innerWidth <= 640; }
 
+/* ── Swipe-to-reveal engine ─────────────────────────────── */
+var _sw = null;
+
+function swClose(btn) {
+  var wrap = btn.closest('.sw-wrap');
+  if (wrap) _swSnapClose(wrap.querySelector('.sw-inner'));
+}
+function swCheckClose(el) {
+  /* returns true if a swipe was open (so we DON'T also toggle collapse) */
+  var wrap = el.closest('.sw-wrap');
+  if (!wrap) return false;
+  var inner = wrap.querySelector('.sw-inner');
+  if (inner && inner._swX && inner._swX < -10) {
+    _swSnapClose(inner); return true;
+  }
+  return false;
+}
+
+function _swSnapClose(inner) {
+  if (!inner) return;
+  inner.style.transition = 'transform .2s';
+  inner.style.transform  = 'translateX(0)';
+  inner._swX = 0;
+  if (inner.parentElement) inner.parentElement.classList.remove('sw-open');
+  setTimeout(function(){ inner.style.transition = ''; }, 220);
+}
+function _swSnapOpen(inner, w) {
+  inner.style.transition = 'transform .2s';
+  inner.style.transform  = 'translateX(-'+w+'px)';
+  inner._swX = -w;
+  if (inner.parentElement) inner.parentElement.classList.add('sw-open');
+  setTimeout(function(){ inner.style.transition = ''; }, 220);
+}
+function _swCloseAll(exceptWrap) {
+  document.querySelectorAll('.sw-inner').forEach(function(inner) {
+    if (inner._swX && inner._swX < -5) {
+      if (!exceptWrap || inner.closest('.sw-wrap') !== exceptWrap)
+        _swSnapClose(inner);
+    }
+  });
+}
+
+document.addEventListener('touchstart', function(e) {
+  var wrap = e.target.closest('.sw-wrap');
+  var inner = wrap ? wrap.querySelector('.sw-inner') : null;
+  /* Close any open swipes that aren't the touched one */
+  _swCloseAll(wrap || null);
+  if (!wrap || !inner) { _sw = null; return; }
+  _sw = {
+    inner: inner,
+    wrap:  wrap,
+    x0: e.touches[0].clientX,
+    y0: e.touches[0].clientY,
+    x:  inner._swX || 0,
+    moved: false,
+    dir: null
+  };
+}, {passive:true});
+
+document.addEventListener('touchmove', function(e) {
+  if (!_sw) return;
+  var dx = e.touches[0].clientX - _sw.x0;
+  var dy = e.touches[0].clientY - _sw.y0;
+  if (!_sw.dir) {
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+    _sw.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+  }
+  if (_sw.dir === 'v') { _sw = null; return; }
+  e.preventDefault();
+  _sw.moved = true;
+  var btns = _sw.wrap.querySelector('.sw-btns');
+  var btnW = btns ? btns.offsetWidth : 136;
+  var newX = Math.max(-btnW, Math.min(0, _sw.x + dx));
+  _sw.inner.style.transform = 'translateX('+newX+'px)';
+  _sw.inner._swX = newX;
+}, {passive:false});
+
+document.addEventListener('touchend', function(e) {
+  if (!_sw || !_sw.moved) { _sw = null; return; }
+  var btns = _sw.wrap.querySelector('.sw-btns');
+  var btnW = btns ? btns.offsetWidth : 136;
+  var x = _sw.inner._swX || 0;
+  if (x < -(btnW * 0.38)) {
+    _swSnapOpen(_sw.inner, btnW);
+  } else {
+    _swSnapClose(_sw.inner);
+  }
+  _sw = null;
+}, {passive:true});
+
+/* ── Swipe delete helpers ───────────────────────────────── */
+function deleteTask(id) {
+  var t = gt(id); if (!t) return;
+  if (!confirm('Delete "'+t.title+'"?')) return;
+  D.tasks = D.tasks.filter(function(x){ return x.id!==id; });
+  if (aid === id) { aid = null; viewProjId = null; }
+  lg('Task deleted: "'+t.title+'"');
+  sv(); render();
+}
+
+function deleteProjSwipe(id) {
+  var p = gp(id); if (!p) return;
+  if (!confirm('Delete project "'+p.name+'"? Tasks become standalone.')) return;
+  D.tasks.forEach(function(t){ if(t.projectId===id) t.projectId=null; });
+  D.projects = D.projects.filter(function(x){ return x.id!==id; });
+  lg('Project deleted: "'+p.name+'"');
+  sv(); render();
+}
+
+function editStepSwipe(sid) {
+  var t = aid ? gt(aid) : null; if (!t) return;
+  var s = t.steps.find(function(x){ return x.id===sid; }); if (!s) return;
+  var v = prompt('Edit step:', s.text); if (v===null || !v.trim()) return;
+  s.text = v.trim();
+  lg('Step edited: "'+v.trim()+'"');
+  sv(); renderDetail();
+}
+
 function render() {
   renderBadges(); renderList(); renderDetail();
   var bb=document.getElementById('mob-back-btn');
@@ -1056,15 +1192,24 @@ function taskRowHtml(t) {
     meta += ' · 📅 '+dueLabel;
   }
   var cls = 'task-row'+(t.id===aid?' tr-active':'')+(t.done?' tr-done':'');
-  return '<div class="'+cls+'" onclick="sel(\''+t.id+'\')" >'+
-    '<div class="tr-dot" style="background:'+dot+'"></div>'+
-    '<div class="tr-body">'+
-      '<div class="tr-name" onclick="event.stopPropagation();this.classList.toggle(\'expanded\')">'+xe(t.title)+'</div>'+
-      '<div class="tr-meta">'+meta+'</div>'+
+  var tid = xe(t.id);
+  return '<div class="sw-wrap">'+
+    '<div class="sw-btns">'+
+      '<button class="sw-btn sw-edit" onclick="swClose(this);openModal(\''+tid+'\')"><i class="ti ti-edit"></i>Edit</button>'+
+      '<button class="sw-btn sw-del"  onclick="swClose(this);deleteTask(\''+tid+'\')"><i class="ti ti-trash"></i>Delete</button>'+
     '</div>'+
-    '<div class="tr-prog"><div class="tr-fill'+(t.done?' tr-fill-done':'')+'" style="width:'+p+'%"></div></div>'+
-    '<button class="tr-check'+(t.done?' tr-checked':'')+'" onclick="event.stopPropagation();toggleDone(\''+t.id+'\')" title="'+(t.done?'Reopen':'Done')+'">'+(t.done?'<i class="ti ti-check"></i>':'')+'</button>'+
-    '<i class="ti ti-chevron-right tr-chev"></i>'+
+    '<div class="sw-inner">'+
+      '<div class="'+cls+'" onclick="sel(\''+t.id+'\')" >'+
+        '<div class="tr-dot" style="background:'+dot+'"></div>'+
+        '<div class="tr-body">'+
+          '<div class="tr-name" onclick="event.stopPropagation();this.classList.toggle(\'expanded\')">'+xe(t.title)+'</div>'+
+          '<div class="tr-meta">'+meta+'</div>'+
+        '</div>'+
+        '<div class="tr-prog"><div class="tr-fill'+(t.done?' tr-fill-done':'')+'" style="width:'+p+'%"></div></div>'+
+        '<button class="tr-check'+(t.done?' tr-checked':'')+'" onclick="event.stopPropagation();toggleDone(\''+t.id+'\')" title="'+(t.done?'Reopen':'Done')+'">'+(t.done?'<i class="ti ti-check"></i>':'')+'</button>'+
+        '<i class="ti ti-chevron-right tr-chev"></i>'+
+      '</div>'+
+    '</div>'+
   '</div>';
 }
 
@@ -1099,17 +1244,28 @@ function renderList() {
       ? '<button class="sect-edit" onclick="event.stopPropagation();openProjModal(\''+g.projId+'\')" title="Edit project"><i class="ti ti-edit"></i></button>'
       : '';
     var countLabel = g.tasks.length ? '<span class="proj-group-count">'+g.tasks.length+'</span>' : '';
+    var isProj = g.projId !== '_standalone';
+    var swBtns = isProj
+      ? '<div class="sw-btns">'+
+          '<button class="sw-btn sw-edit" onclick="swClose(this);openProjModal(\''+g.projId+'\')"><i class="ti ti-edit"></i>Edit</button>'+
+          '<button class="sw-btn sw-del"  onclick="swClose(this);deleteProjSwipe(\''+g.projId+'\')"><i class="ti ti-trash"></i>Delete</button>'+
+        '</div>'
+      : '';
     return '<div class="proj-group">'+
-      '<div class="proj-group-hdr" onclick="toggleProjCollapse(\''+g.projId+'\')">'+
-        '<span class="proj-group-dot" style="background:'+g.color+'"></span>'+
-        '<span class="proj-group-name" style="color:'+g.color+'">'+xe(g.label)+'</span>'+
-        countLabel+
-        editBtn+
-        '<i class="ti ti-chevron-right proj-chev'+(collapsed?'':' open')+'"></i>'+
+      '<div class="sw-wrap">'+
+        swBtns+
+        '<div class="sw-inner">'+
+          '<div class="proj-group-hdr" onclick="swCheckClose(this)||toggleProjCollapse(\''+g.projId+'\')">'+
+            '<span class="proj-group-dot" style="background:'+g.color+'"></span>'+
+            '<span class="proj-group-name" style="color:'+g.color+'">'+xe(g.label)+'</span>'+
+            countLabel+
+            '<i class="ti ti-chevron-right proj-chev'+(collapsed?'':' open')+'"></i>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
       (!collapsed && g.tasks.length
         ? '<div class="proj-group-tasks">'+g.tasks.map(taskRowHtml).join('')+'</div>'
-        : (!collapsed && !g.tasks.length ? '<div style="padding:6px 16px 10px;font-size:13px;color:var(--muted)">No matching tasks</div>' : '')
+        : (!collapsed && !g.tasks.length ? '<div style="padding:6px 16px 10px;font-size:13px;color:var(--muted)">No tasks yet — tap + to add</div>' : '')
       )+
     '</div>';
   }).join('');
@@ -1230,19 +1386,26 @@ function renderSteps(el) {
         var subsBadge=cnt?'<span style="font-size:10px;margin-left:1px">'+cnt+'</span>':'';
         var currBtn=!s.done?'<button class="step-btn" onclick="setCurr(\''+s.id+'\')" title="Set current"><i class="ti ti-player-play"></i></button>':'';
         var delegColor=s.delegated?' style="color:var(--amber)"':'';
-        return '<div class="'+rowCls+'" draggable="true"'+
-            ' ondragstart="ds(event,'+i+')" ondragover="dov(event)" ondrop="drp(event,'+i+')"'+
-            ' ondragenter="den(event)" ondragleave="dleave(event)">'+
-          '<span class="step-grip ti ti-grip-vertical"></span>'+
-          '<div class="'+chkCls+'" onclick="toggleStep(\''+s.id+'\')">'+
-            (s.done?'<i class="ti ti-check"></i>':'')+
+        return '<div class="sw-wrap">'+
+          '<div class="sw-btns">'+
+            '<button class="sw-btn sw-edit" onclick="swClose(this);editStepSwipe(\''+s.id+'\')"><i class="ti ti-edit"></i>Edit</button>'+
+            '<button class="sw-btn sw-del"  onclick="swClose(this);delStep(\''+s.id+'\')"><i class="ti ti-trash"></i>Delete</button>'+
           '</div>'+
-          '<div class="step-body"><div class="step-text">'+xe(s.text)+'</div>'+delegHtml+'</div>'+
-          '<div class="step-acts">'+
-            currBtn+
-            '<button class="step-btn" onclick="delegSt(\''+s.id+'\')"'+delegColor+' title="Delegate"><i class="ti ti-user-share"></i></button>'+
-            '<button class="step-btn" onclick="toggleSubs(\''+s.id+'\')"'+subsColor+' title="Substeps"><i class="ti ti-subtask"></i>'+subsBadge+'</button>'+
-            '<button class="step-btn danger" onclick="delStep(\''+s.id+'\')" title="Delete"><i class="ti ti-trash"></i></button>'+
+          '<div class="sw-inner">'+
+            '<div class="'+rowCls+'" draggable="true"'+
+                ' ondragstart="ds(event,'+i+')" ondragover="dov(event)" ondrop="drp(event,'+i+')"'+
+                ' ondragenter="den(event)" ondragleave="dleave(event)">'+
+              '<span class="step-grip ti ti-grip-vertical"></span>'+
+              '<div class="'+chkCls+'" onclick="toggleStep(\''+s.id+'\')">'+
+                (s.done?'<i class="ti ti-check"></i>':'')+
+              '</div>'+
+              '<div class="step-body"><div class="step-text">'+xe(s.text)+'</div>'+delegHtml+'</div>'+
+              '<div class="step-acts">'+
+                currBtn+
+                '<button class="step-btn" onclick="delegSt(\''+s.id+'\')"'+delegColor+' title="Delegate"><i class="ti ti-user-share"></i></button>'+
+                '<button class="step-btn" onclick="toggleSubs(\''+s.id+'\')"'+subsColor+' title="Substeps"><i class="ti ti-subtask"></i>'+subsBadge+'</button>'+
+              '</div>'+
+            '</div>'+
           '</div>'+
         '</div>'+
         (open?'<div class="sub-area">'+renderSubsHtml(s)+'</div>':'');
