@@ -1306,7 +1306,7 @@ function isFocused(type, id) {
   });
 }
 
-function toggleFocus(type, refId, name, parentTaskId) {
+function toggleFocus(type, refId, parentTaskId) {
   if (!D.focus) D.focus = [];
   var found = D.focus.find(function(f){
     return f.type===type && (
@@ -1318,7 +1318,7 @@ function toggleFocus(type, refId, name, parentTaskId) {
   if (found) {
     D.focus = D.focus.filter(function(f){ return f.fid!==found.fid; });
   } else {
-    var item = {fid:uid(), type:type, name:name};
+    var item = {fid:uid(), type:type};
     if (type==='task')    item.taskId = refId;
     if (type==='project') item.projId = refId;
     if (type==='step')  { item.stepId = refId; item.taskId = parentTaskId; }
@@ -1448,7 +1448,7 @@ function taskRowHtml(t) {
         '</div>'+
         '<div class="tr-prog"><div class="tr-fill'+(t.done?' tr-fill-done':'')+'" style="width:'+p+'%"></div></div>'+
         '<button class="tr-check'+(t.done?' tr-checked':'')+'" onclick="event.stopPropagation();toggleDone(\''+t.id+'\')" title="'+(t.done?'Reopen':'Done')+'">'+(t.done?'<i class="ti ti-check"></i>':'')+'</button>'+
-        '<button class="tr-pin'+(pinned?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'task\',\''+tid+'\','+JSON.stringify(xe(t.title))+')" title="'+(pinned?'Remove from Focus':'Add to Focus')+'"><i class="ti ti-pin"></i></button>'+
+        '<button class="tr-pin'+(pinned?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'task\',\''+tid+'\')" title="'+(pinned?'Remove from Focus':'Add to Focus')+'"><i class="ti ti-pin"></i></button>'+
         '<i class="ti ti-chevron-right tr-chev"></i>'+
       '</div>'+
     '</div>'+
@@ -1490,7 +1490,7 @@ function renderList() {
     var isProj = g.projId !== '_standalone';
     var projPinned = isProj && isFocused('project', g.projId);
     var pinBtn = isProj
-      ? '<button class="tr-pin'+(projPinned?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'project\',\''+g.projId+'\','+JSON.stringify(xe(g.label))+')" title="'+(projPinned?'Remove from Focus':'Add to Focus')+'"><i class="ti ti-pin"></i></button>'
+      ? '<button class="tr-pin'+(projPinned?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'project\',\''+g.projId+'\')" title="'+(projPinned?'Remove from Focus':'Add to Focus')+'"><i class="ti ti-pin"></i></button>'
       : '';
     var swBtns = isProj
       ? '<div class="sw-btns">'+
@@ -1654,7 +1654,7 @@ function renderSteps(el) {
                 currBtn+
                 '<button class="step-btn" onclick="delegSt(\''+s.id+'\')"'+delegColor+' title="Delegate"><i class="ti ti-user-share"></i></button>'+
                 '<button class="step-btn" onclick="toggleSubs(\''+s.id+'\')"'+subsColor+' title="Substeps"><i class="ti ti-subtask"></i>'+subsBadge+'</button>'+
-                '<button class="step-btn"'+stepPinColor+' onclick="toggleFocus(\'step\',\''+s.id+'\','+JSON.stringify(xe(s.text))+',\''+t.id+'\')" title="'+(stepPinned?'Remove from Focus':'Add to Focus')+'"><i class="ti ti-pin"></i></button>'+
+                '<button class="step-btn"'+stepPinColor+' onclick="toggleFocus(\'step\',\''+s.id+'\',\''+t.id+'\')" title="'+(stepPinned?'Remove from Focus':'Add to Focus')+'"><i class="ti ti-pin"></i></button>'+
               '</div>'+
             '</div>'+
           '</div>'+
