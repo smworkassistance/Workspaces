@@ -159,77 +159,71 @@ body{
   padding-bottom:calc(40px + env(safe-area-inset-bottom,0px));
 }
 
-/* ── Project filter bar ────────────────────────────────── */
-#proj-bar{
-  padding:10px 10px 8px;
+/* ── Search bar ────────────────────────────────────────── */
+#search-bar{
+  padding:8px 10px;
   border-bottom:0.5px solid var(--border);
-  display:flex;flex-wrap:wrap;gap:5px;
-  align-items:center;flex-shrink:0;
+  flex-shrink:0;
 }
-.proj-pill{
-  padding:5px 13px;border-radius:20px;
-  font-size:13px;font-weight:600;
-  cursor:pointer;border:1.5px solid var(--border-strong);
-  background:transparent;color:var(--muted);
-  transition:all .12s;display:flex;align-items:center;
-  gap:5px;white-space:nowrap;font-family:var(--font);
-  touch-action:manipulation;flex-shrink:0;
+#search-input{
+  width:100%;box-sizing:border-box;
+  padding:7px 12px;border-radius:10px;
+  border:none;background:rgba(118,118,128,.12);
+  font-size:14px;font-family:var(--font);color:var(--text);
+  outline:none;-webkit-appearance:none;
 }
-.proj-pill:hover{border-color:var(--accent-mid);color:var(--text)}
-.proj-pill:active{opacity:.7}
-.proj-pill.all-active{background:var(--accent);border-color:var(--accent);color:#fff}
-.proj-pill.proj-active{color:#fff}
-.proj-pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.btn-add-proj{
-  width:30px;height:30px;border:1.5px solid var(--accent-mid);
-  border-radius:50%;background:transparent;cursor:pointer;
-  color:var(--accent);font-size:15px;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .12s;padding:0;margin-left:2px;
-  touch-action:manipulation;flex-shrink:0;
-}
-.btn-add-proj:hover{background:var(--accent-soft);border-color:var(--accent)}
-
-/* ── Project dropdown (when > 5 projects) ──────────────── */
-.proj-dd-wrap{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:6px}
-.proj-dd-trigger{
-  display:flex;align-items:center;gap:7px;
-  flex:1;padding:7px 12px;border-radius:20px;
-  border:1.5px solid var(--border-strong);background:var(--surface);
-  cursor:pointer;font-family:var(--font);font-size:15px;font-weight:700;
-  color:var(--text);transition:border-color .12s;
-  touch-action:manipulation;min-width:0;
-}
-.proj-dd-trigger:active{opacity:.75}
-.proj-dd-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.proj-dd-label{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.proj-dd-chev{font-size:13px;color:var(--muted);flex-shrink:0;transition:transform .18s}
-.proj-dd-chev.open{transform:rotate(180deg)}
-.proj-dd-panel{
-  position:fixed;
-  background:var(--surface);border:1px solid var(--border-strong);
-  border-radius:var(--r-md);
-  box-shadow:0 8px 28px rgba(0,0,0,.14);
-  z-index:500;overflow:hidden;
-  max-height:60vh;overflow-y:auto;
-  display:none;
-}
-.proj-dd-panel.open{display:block}
-.proj-dd-item{
-  display:flex;align-items:center;gap:10px;
-  padding:12px 16px;cursor:pointer;
-  font-size:17px;font-weight:500;color:var(--text);
-  border-bottom:0.5px solid var(--border);
-  transition:background .1s;font-family:var(--font);
-  touch-action:manipulation;
-}
-.proj-dd-item:last-child{border-bottom:none}
-.proj-dd-item:active{background:rgba(0,0,0,.04)}
-.proj-dd-item.dd-active{font-weight:700}
-.proj-dd-dot-lg{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+#search-input::placeholder{color:var(--muted)}
 
 /* ── Task list area ────────────────────────────────────── */
-#task-list{padding:8px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#task-list{padding:6px 0;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Collapsible project groups ────────────────────────── */
+.proj-group{margin-bottom:2px}
+.proj-group-hdr{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 14px 7px;cursor:pointer;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.proj-group-hdr:active{background:rgba(0,0,0,.03)}
+.proj-group-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.proj-group-name{
+  flex:1;font-size:15px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.proj-group-count{font-size:11px;color:var(--muted);font-weight:600}
+.proj-chev{
+  font-size:14px;color:var(--muted);flex-shrink:0;
+  transition:transform .18s;
+}
+.proj-chev.open{transform:rotate(90deg)}
+.proj-group-tasks{padding:0 0 6px}
+
+/* ── FAB action menu ───────────────────────────────────── */
+#fab-menu{
+  position:fixed;
+  bottom:calc(49px + env(safe-area-inset-bottom,0px) + 76px);
+  right:16px;z-index:46;
+  display:flex;flex-direction:column;gap:8px;align-items:flex-end;
+  pointer-events:none;opacity:0;
+  transition:opacity .18s,transform .18s;
+  transform:translateY(8px);
+}
+#fab-menu.open{pointer-events:auto;opacity:1;transform:translateY(0)}
+.fab-menu-btn{
+  display:flex;align-items:center;gap:9px;
+  background:var(--surface);border:none;border-radius:20px;
+  padding:9px 16px 9px 12px;
+  font-size:14px;font-weight:700;font-family:var(--font);color:var(--text);
+  box-shadow:0 3px 16px rgba(0,0,0,.15);cursor:pointer;
+  touch-action:manipulation;white-space:nowrap;
+}
+.fab-menu-btn:active{opacity:.75}
+.fab-menu-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#fab-overlay{
+  display:none;position:fixed;inset:0;z-index:44;
+}
+#fab-overlay.open{display:block}
 
 /* ── Grouped task rows ─────────────────────────────────── */
 .task-section{margin-bottom:8px}
@@ -674,18 +668,6 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   .btn-new{padding:6px 12px;font-size:15px;gap:3px}
   .btn-new span{display:none} /* hide text, keep icon */
 
-  /* Project filter: horizontal scroll strip */
-  #proj-bar{
-    flex-wrap:nowrap;overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    padding:8px 12px;gap:6px;
-    scrollbar-width:none;
-    border-bottom:0.5px solid var(--border);
-  }
-  #proj-bar::-webkit-scrollbar{display:none}
-  .proj-pill{font-size:13px;padding:5px 13px}
-  .btn-add-proj{width:28px;height:28px;flex-shrink:0}
-
   #sidebar-resizer{display:none}
   .sect-edit{display:none}
 
@@ -714,16 +696,14 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
 
   /* iOS grouped list */
   #task-list{
-    padding:0 0;
+    padding:0;
     padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
   }
-  /* Mobile proj-bar: horizontal scroll, add btn always visible */
-  #proj-bar{
-    flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;padding:8px 10px 8px;
-  }
-  #proj-bar::-webkit-scrollbar{display:none}
+  #search-bar{padding:8px 16px}
+  #search-input{padding:8px 12px;font-size:15px}
+  .proj-group-hdr{padding:12px 16px 8px}
+  .proj-group-tasks{padding:0}
+  .proj-group-name{font-size:16px}
 
   .task-section{margin-bottom:0}
   .sect-hdr{
@@ -853,7 +833,9 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   </header>
   <div id="main">
     <aside id="sidebar">
-      <div id="proj-bar"></div>
+      <div id="search-bar">
+        <input id="search-input" type="search" placeholder="Search tasks…" oninput="searchTasks()" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
       <div id="task-list"></div>
     </aside>
     <div id="sidebar-resizer" title="Drag to resize"></div>
@@ -861,13 +843,26 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   </div>
 </div>
 
+<!-- FAB overlay (closes menu on outside tap) -->
+<div id="fab-overlay" onclick="closeFabMenu()"></div>
+
+<!-- FAB action menu -->
+<div id="fab-menu">
+  <button class="fab-menu-btn" onclick="closeFabMenu();openProjModal(null)">
+    <span class="fab-menu-dot" style="background:var(--accent)"></span>Add Project
+  </button>
+  <button class="fab-menu-btn" onclick="closeFabMenu();openModal()">
+    <span class="fab-menu-dot" style="background:#34C759"></span>Add Task
+  </button>
+</div>
+
 <!-- Floating Add Button -->
-<button id="fab" onclick="openModal()"><i class="ti ti-plus"></i></button>
+<button id="fab" onclick="toggleFabMenu()"><i class="ti ti-plus"></i></button>
 
 <!-- Bottom Nav -->
 <nav id="bottom-nav">
   <a href="chain.html" class="bn-item active"><i class="ti ti-home"></i><span>Chain</span></a>
-  <a href="mindmapv14.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
+  <a href="mindmapv17.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
   <a href="mindmapv15.html" class="bn-item"><i class="ti ti-360-view"></i><span>3D Map</span></a>
   <a href="mindmapv16.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
 </nav>
@@ -928,7 +923,6 @@ var editId = null;
 var editProjId = null;
 var dragSrc = null;
 var xsubs = {};
-var activeProj = null;
 
 function dotState(s) {
   var el = document.getElementById('sync-dot');
@@ -1000,16 +994,38 @@ function sd(t) {
   if(!hasCurr){var f=t.steps.find(function(s){return!s.done;});if(f)f.current=true;}
 }
 
-function filteredTasks() {
-  if (activeProj==='standalone') return D.tasks.filter(function(t){return !t.projectId;});
-  if (activeProj) return D.tasks.filter(function(t){return t.projectId===activeProj;});
-  return D.tasks;
+var searchQ = '';
+var collapsedProjs = {};
+var fabMenuOpen = false;
+
+function searchTasks() {
+  searchQ = document.getElementById('search-input').value;
+  renderList();
+}
+
+function toggleFabMenu() {
+  fabMenuOpen = !fabMenuOpen;
+  document.getElementById('fab-menu').classList.toggle('open', fabMenuOpen);
+  document.getElementById('fab-overlay').classList.toggle('open', fabMenuOpen);
+  document.getElementById('fab').style.transform = fabMenuOpen ? 'rotate(45deg)' : '';
+}
+function closeFabMenu() {
+  fabMenuOpen = false;
+  document.getElementById('fab-menu').classList.remove('open');
+  document.getElementById('fab-overlay').classList.remove('open');
+  document.getElementById('fab').style.transform = '';
+}
+
+function toggleProjCollapse(id) {
+  /* undefined = default collapsed; false = expanded; true = collapsed */
+  collapsedProjs[id] = collapsedProjs[id] !== false ? false : true;
+  renderList();
 }
 
 function isMob() { return window.innerWidth <= 640; }
 
 function render() {
-  renderBadges(); renderProjects(); renderList(); renderDetail();
+  renderBadges(); renderList(); renderDetail();
   var bb=document.getElementById('mob-back-btn');
   if(bb) bb.style.display=isMob()?'flex':'none';
 }
@@ -1022,104 +1038,6 @@ function renderBadges() {
     (done?'<span class="badge badge-done">'+done+' done</span>':'');
 }
 
-var _projDdOpen = false;
-
-function toggleProjDd(e) {
-  e.stopPropagation();
-  _projDdOpen = !_projDdOpen;
-  var panel = document.getElementById('proj-dd-panel');
-  var chev  = document.getElementById('proj-dd-chev');
-  if (panel) {
-    if (_projDdOpen) {
-      /* position panel using fixed coordinates to escape overflow:auto parents */
-      var trigger = document.getElementById('proj-dd-trigger') || e.currentTarget;
-      var rect = trigger.getBoundingClientRect();
-      panel.style.top    = (rect.bottom + 4) + 'px';
-      panel.style.left   = rect.left + 'px';
-      panel.style.width  = rect.width + 'px';
-    }
-    panel.classList.toggle('open', _projDdOpen);
-  }
-  if (chev) chev.classList.toggle('open', _projDdOpen);
-}
-
-function closeProjDd() {
-  _projDdOpen = false;
-  var panel = document.getElementById('proj-dd-panel');
-  var chev  = document.getElementById('proj-dd-chev');
-  if (panel) panel.classList.remove('open');
-  if (chev)  chev.classList.remove('open');
-}
-
-document.addEventListener('click', closeProjDd);
-
-function renderProjects() {
-  var bar = document.getElementById('proj-bar');
-  var hasStandalone = D.tasks.some(function(t){return !t.projectId;});
-  var addBtn = '<button class="btn-add-proj" onclick="openProjModal()" title="New project"><i class="ti ti-plus"></i></button>';
-
-  /* Always use dropdown */
-  if (true) {
-    /* Find active label + color for trigger */
-    var ddLabel = 'All projects';
-    var ddColor = 'var(--accent)';
-    if (activeProj === 'standalone') { ddLabel = 'My Tasks'; ddColor = '#8B8BA7'; }
-    else if (activeProj) {
-      var ap = gp(activeProj);
-      if (ap) { ddLabel = ap.name; ddColor = ap.color; }
-    }
-
-    var items = '<div class="proj-dd-item'+(activeProj===null?' dd-active':'')+'" onclick="setProj(null);closeProjDd()">'+
-      '<span class="proj-dd-dot-lg" style="background:var(--accent)"></span>All projects</div>';
-    D.projects.forEach(function(p) {
-      var isActive = activeProj===p.id;
-      items += '<div class="proj-dd-item'+(isActive?' dd-active':'')+'" style="'+(isActive?'color:'+p.color:'')+'" onclick="setProj(\''+p.id+'\');closeProjDd()" ondblclick="openProjModal(\''+p.id+'\')">'+
-        '<span class="proj-dd-dot-lg" style="background:'+p.color+'"></span>'+xe(p.name)+'</div>';
-    });
-    if (hasStandalone) {
-      items += '<div class="proj-dd-item'+(activeProj==='standalone'?' dd-active':'')+'" onclick="setProj(\'standalone\');closeProjDd()">'+
-        '<span class="proj-dd-dot-lg" style="background:#8B8BA7"></span>My Tasks</div>';
-    }
-
-    bar.innerHTML =
-      '<div class="proj-dd-wrap">'+
-        '<button class="proj-dd-trigger" id="proj-dd-trigger" onclick="toggleProjDd(event)">'+
-          '<span class="proj-dd-dot" style="background:'+ddColor+'"></span>'+
-          '<span class="proj-dd-label">'+xe(ddLabel)+'</span>'+
-          '<i class="ti ti-chevron-down proj-dd-chev" id="proj-dd-chev"></i>'+
-        '</button>'+
-      '</div>'+
-      addBtn;
-
-    /* Portal: render panel at body level to escape sidebar stacking context */
-    var existingPanel = document.getElementById('proj-dd-panel');
-    if (existingPanel) existingPanel.remove();
-    var panelEl = document.createElement('div');
-    panelEl.className = 'proj-dd-panel';
-    panelEl.id = 'proj-dd-panel';
-    panelEl.innerHTML = items;
-    document.body.appendChild(panelEl);
-    return;
-  }
-
-  /* Pill mode (≤ 5 projects) */
-  var allActive = activeProj===null ? ' all-active' : '';
-  var html = '<button class="proj-pill'+allActive+'" onclick="setProj(null)">All</button>';
-  D.projects.forEach(function(p) {
-    var isActive = activeProj===p.id;
-    var style = isActive ? ' style="background:'+p.color+';border-color:'+p.color+'"' : ' style="border-color:'+p.color+';color:'+p.color+'"';
-    html += '<button class="proj-pill'+(isActive?' proj-active':'')+'"'+style+
-      ' onclick="setProj(\''+p.id+'\')" ondblclick="openProjModal(\''+p.id+'\')">'+
-      '<span class="proj-pill-dot" style="background:'+p.color+'"></span>'+xe(p.name)+
-    '</button>';
-  });
-  if (hasStandalone) {
-    var standActive = activeProj==='standalone' ? ' all-active' : '';
-    html += '<button class="proj-pill'+standActive+'" onclick="setProj(\'standalone\')">My Tasks</button>';
-  }
-  html += addBtn;
-  bar.innerHTML = html;
-}
 
 function taskRowHtml(t) {
   var p = pct(t);
@@ -1143,34 +1061,51 @@ function taskRowHtml(t) {
 
 function renderList() {
   var el = document.getElementById('task-list');
-  var tasks = filteredTasks();
-  if (!tasks.length) {
-    el.innerHTML = '<div class="empty-st"><i class="ti ti-list-check"></i><p>'+(D.tasks.length?'No tasks in this filter':'No tasks yet')+'</p></div>';
+  var q = searchQ.trim().toLowerCase();
+  var tasks = q
+    ? D.tasks.filter(function(t){ return t.title.toLowerCase().indexOf(q) !== -1; })
+    : D.tasks;
+
+  if (!D.tasks.length) {
+    el.innerHTML = '<div class="empty-st"><i class="ti ti-list-check"></i><p>No tasks yet</p></div>';
     return;
   }
+
   var groups = [];
   D.projects.forEach(function(p) {
-    var pt = tasks.filter(function(t){return t.projectId===p.id;});
-    if (pt.length) groups.push({label:p.name, color:p.color, projId:p.id, tasks:pt});
+    var pt = tasks.filter(function(t){ return t.projectId === p.id; });
+    if (pt.length || (!q && D.tasks.some(function(t){ return t.projectId===p.id; }))) {
+      groups.push({label:p.name, color:p.color, projId:p.id, tasks:pt});
+    }
   });
-  var standalone = tasks.filter(function(t){return !t.projectId;});
-  if (standalone.length) groups.push({label:'My Tasks', color:'#8B8BA7', projId:null, tasks:standalone});
+  var standalone = tasks.filter(function(t){ return !t.projectId; });
+  if (standalone.length || (!q && D.tasks.some(function(t){ return !t.projectId; }))) {
+    groups.push({label:'My Tasks', color:'#8B8BA7', projId:'_standalone', tasks:standalone});
+  }
+
   if (!groups.length) {
-    el.innerHTML = '<div class="empty-st"><i class="ti ti-list-check"></i><p>No tasks in this filter</p></div>';
+    el.innerHTML = '<div class="empty-st"><i class="ti ti-list-check"></i><p>No tasks match</p></div>';
     return;
   }
+
   el.innerHTML = groups.map(function(g) {
-    var editBtn = g.projId
+    var collapsed = collapsedProjs[g.projId] !== false; /* default collapsed */
+    var editBtn = g.projId !== '_standalone'
       ? '<button class="sect-edit" onclick="event.stopPropagation();openProjModal(\''+g.projId+'\')" title="Edit project"><i class="ti ti-edit"></i></button>'
       : '';
-    var clickHdr = g.projId ? ' onclick="selProj(\''+g.projId+'\')"' : '';
-    return '<div class="task-section">'+
-      '<div class="sect-hdr"'+clickHdr+'>'+
-        '<span class="sect-hdot" style="background:'+g.color+'"></span>'+
-        '<span class="sect-hdr-label">'+xe(g.label)+'</span>'+
+    var countLabel = g.tasks.length ? '<span class="proj-group-count">'+g.tasks.length+'</span>' : '';
+    return '<div class="proj-group">'+
+      '<div class="proj-group-hdr" onclick="toggleProjCollapse(\''+g.projId+'\')">'+
+        '<span class="proj-group-dot" style="background:'+g.color+'"></span>'+
+        '<span class="proj-group-name" style="color:'+g.color+'">'+xe(g.label)+'</span>'+
+        countLabel+
         editBtn+
+        '<i class="ti ti-chevron-right proj-chev'+(collapsed?'':' open')+'"></i>'+
       '</div>'+
-      '<div class="sect-tasks">'+g.tasks.map(taskRowHtml).join('')+'</div>'+
+      (!collapsed && g.tasks.length
+        ? '<div class="proj-group-tasks">'+g.tasks.map(taskRowHtml).join('')+'</div>'
+        : (!collapsed && !g.tasks.length ? '<div style="padding:6px 16px 10px;font-size:13px;color:var(--muted)">No matching tasks</div>' : '')
+      )+
     '</div>';
   }).join('');
 }
@@ -1352,14 +1287,6 @@ function renderLog(el) {
   '</div>';
 }
 
-function setProj(id) {
-  activeProj = id;
-  if (aid) {
-    var visible = filteredTasks().find(function(t){return t.id===aid;});
-    if (!visible) { aid = filteredTasks().length ? filteredTasks()[0].id : null; ctab='steps'; }
-  }
-  render();
-}
 
 function openProjModal(id) {
   editProjId = id || null;
@@ -1415,7 +1342,6 @@ function delProj() {
   if (!confirm('Delete project "'+( p?p.name:'' )+'"? Tasks will become standalone.')) return;
   D.tasks.forEach(function(t){ if(t.projectId===editProjId) t.projectId=null; });
   D.projects = D.projects.filter(function(x){return x.id!==editProjId;});
-  if (activeProj===editProjId) activeProj=null;
   lg('Project deleted: "'+(p?p.name:'')+'"');
   sv(); closeProjModal(); render();
 }
@@ -1557,7 +1483,7 @@ function openModal(id) {
   } else {
     document.getElementById('modal-title').textContent='New task';
     nameEl.value='';assEl.value='';
-    projSel.value=activeProj&&activeProj!=='standalone'?activeProj:'';
+    projSel.value='';
     saveBtn.onclick=saveNew;
   }
   document.getElementById('modal-overlay').classList.add('open');

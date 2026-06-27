@@ -188,7 +188,7 @@ body{
 .proj-group-hdr:active{background:rgba(0,0,0,.03)}
 .proj-group-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .proj-group-name{
-  flex:1;font-size:15px;font-weight:700;color:var(--text);
+  flex:1;font-size:15px;font-weight:700;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .proj-group-count{font-size:11px;color:var(--muted);font-weight:600}
@@ -862,7 +862,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
 <!-- Bottom Nav -->
 <nav id="bottom-nav">
   <a href="chain.html" class="bn-item active"><i class="ti ti-home"></i><span>Chain</span></a>
-  <a href="mindmapv14.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
+  <a href="mindmapv17.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
   <a href="mindmapv15.html" class="bn-item"><i class="ti ti-360-view"></i><span>3D Map</span></a>
   <a href="mindmapv16.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
 </nav>
@@ -1017,7 +1017,8 @@ function closeFabMenu() {
 }
 
 function toggleProjCollapse(id) {
-  collapsedProjs[id] = !collapsedProjs[id];
+  /* undefined = default collapsed; false = expanded; true = collapsed */
+  collapsedProjs[id] = collapsedProjs[id] !== false ? false : true;
   renderList();
 }
 
@@ -1088,7 +1089,7 @@ function renderList() {
   }
 
   el.innerHTML = groups.map(function(g) {
-    var collapsed = collapsedProjs[g.projId];
+    var collapsed = collapsedProjs[g.projId] !== false; /* default collapsed */
     var editBtn = g.projId !== '_standalone'
       ? '<button class="sect-edit" onclick="event.stopPropagation();openProjModal(\''+g.projId+'\')" title="Edit project"><i class="ti ti-edit"></i></button>'
       : '';
@@ -1096,7 +1097,7 @@ function renderList() {
     return '<div class="proj-group">'+
       '<div class="proj-group-hdr" onclick="toggleProjCollapse(\''+g.projId+'\')">'+
         '<span class="proj-group-dot" style="background:'+g.color+'"></span>'+
-        '<span class="proj-group-name">'+xe(g.label)+'</span>'+
+        '<span class="proj-group-name" style="color:'+g.color+'">'+xe(g.label)+'</span>'+
         countLabel+
         editBtn+
         '<i class="ti ti-chevron-right proj-chev'+(collapsed?'':' open')+'"></i>'+
