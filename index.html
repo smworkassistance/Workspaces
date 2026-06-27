@@ -290,6 +290,100 @@ body{
 }
 .focus-rm:active{background:rgba(255,59,48,.1);color:#FF3B30}
 
+/* ── Step edit modal ────────────────────────────────────── */
+#step-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:none;align-items:flex-end;justify-content:center;z-index:200}
+#step-modal-overlay.open{display:flex}
+#step-modal{background:var(--surface);width:100%;max-width:480px;
+  border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));
+  max-height:80vh;overflow-y:auto}
+#step-modal h3{font-size:17px;font-weight:700;margin-bottom:14px}
+#step-modal label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted);margin-top:10px;display:block;margin-bottom:4px}
+#step-modal input{width:100%;border:1.5px solid var(--border);border-radius:10px;
+  padding:9px 12px;font-size:15px;font-family:var(--font);background:var(--bg);
+  color:var(--text);box-sizing:border-box}
+#step-modal input:focus{outline:none;border-color:var(--accent)}
+
+/* ── Step tag badges in step rows ───────────────────────── */
+.step-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:2px}
+.step-tag{display:inline-flex;align-items:center;font-size:9px;font-weight:800;
+  letter-spacing:.04em;border-radius:4px;padding:1px 5px}
+
+/* ── Alive project view ─────────────────────────────────── */
+.proj-view-hdr{display:flex;align-items:center;gap:10px;padding:14px 14px 8px;flex-shrink:0}
+.proj-view-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.proj-view-name{font-size:19px;font-weight:800;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-view-act{display:flex;gap:6px}
+.proj-view-tags{display:flex;flex-wrap:wrap;gap:5px;padding:0 14px 8px}
+.proj-view-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
+  border-radius:10px;font-size:11px;font-weight:700}
+.proj-view-stats{display:flex;gap:0;border-top:.5px solid var(--border);
+  border-bottom:.5px solid var(--border);flex-shrink:0}
+.proj-view-stat{flex:1;text-align:center;padding:10px 0}
+.proj-view-stat-n{font-size:22px;font-weight:800;line-height:1}
+.proj-view-stat-l{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px}
+.proj-view-prog{height:3px;background:rgba(60,60,67,.1);margin:0;flex-shrink:0}
+.proj-view-prog-fill{height:100%;border-radius:0;transition:width .3s}
+.proj-view-add-btn{display:flex;align-items:center;gap:8px;padding:11px 14px;
+  border-bottom:.5px solid var(--border);cursor:pointer;color:var(--accent);
+  font-size:14px;font-weight:700;background:none;border-left:none;border-right:none;
+  border-top:none;font-family:var(--font);width:100%;text-align:left;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.proj-view-add-btn:active{background:rgba(0,122,255,.06)}
+.proj-task-block{border-bottom:.5px solid var(--border)}
+.proj-task-row{display:flex;align-items:center;gap:0;background:var(--surface)}
+.proj-task-check{width:40px;height:44px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.proj-task-check .ck{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;transition:all .15s}
+.proj-task-check .ck.done{background:var(--green);border-color:var(--green);color:#fff}
+.proj-task-check .ck i{font-size:11px}
+.proj-task-body{flex:1;min-width:0;padding:8px 0;cursor:pointer;touch-action:manipulation}
+.proj-task-name{font-size:14px;font-weight:700;color:var(--text);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.proj-task-name.done{text-decoration:line-through;color:var(--muted)}
+.proj-task-meta{font-size:11px;color:var(--muted);margin-top:1px;display:flex;
+  align-items:center;flex-wrap:wrap;gap:2px}
+.proj-task-acts{display:flex;gap:2px;padding-right:8px;flex-shrink:0}
+.proj-task-btn{border:none;background:none;color:var(--muted);cursor:pointer;
+  padding:6px;border-radius:6px;font-size:16px;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;line-height:1}
+.proj-task-btn:active{background:rgba(60,60,67,.08);color:var(--text)}
+.proj-task-btn.danger:active{background:rgba(255,59,48,.1);color:#FF3B30}
+.proj-task-btn.pin-on{color:#FF9500}
+.proj-steps-block{background:var(--bg);padding:2px 12px 6px 42px}
+.proj-step-row{display:flex;align-items:center;gap:6px;padding:6px 0;
+  border-bottom:.5px solid rgba(60,60,67,.08)}
+.proj-step-row:last-child{border-bottom:none}
+.proj-step-chk{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  flex-shrink:0;touch-action:manipulation;transition:all .15s}
+.proj-step-chk.done{background:var(--green);border-color:var(--green);color:#fff}
+.proj-step-chk i{font-size:10px}
+.proj-step-body{flex:1;min-width:0}
+.proj-step-text{font-size:13px;color:var(--text)}
+.proj-step-text.done{text-decoration:line-through;color:var(--muted)}
+.proj-step-deleg{font-size:10px;color:var(--amber);margin-top:1px}
+.proj-step-acts{display:flex;gap:1px;flex-shrink:0}
+.proj-step-btn{border:none;background:none;color:var(--muted);cursor:pointer;
+  padding:4px 5px;border-radius:5px;font-size:14px;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;line-height:1}
+.proj-step-btn:active{background:rgba(60,60,67,.08)}
+.proj-step-btn.pin-on{color:#FF9500}
+.proj-step-btn.del:active{background:rgba(255,59,48,.1);color:#FF3B30}
+.proj-add-step{display:flex;align-items:center;gap:6px;padding:4px 0 6px 42px;background:var(--bg)}
+.proj-add-step input{flex:1;border:1px solid var(--border);border-radius:8px;
+  padding:5px 9px;font-size:13px;font-family:var(--font);background:var(--surface);color:var(--text)}
+.proj-add-step input:focus{outline:none;border-color:var(--accent)}
+.proj-add-step button{border:none;background:var(--accent);color:#fff;border-radius:8px;
+  padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);
+  touch-action:manipulation;white-space:nowrap}
+.proj-notes-section{padding:12px 14px;border-top:.5px solid var(--border)}
+.proj-notes-section label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px}
+
 /* ── Alive focus rows ───────────────────────────────────── */
 .focus-row-wrap{display:flex;align-items:stretch;border-bottom:.5px solid var(--border)}
 .focus-ctrl{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -1046,7 +1140,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   <a href="chain.html" class="bn-item active"><i class="ti ti-home"></i><span>Chain</span></a>
   <a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
   <a href="calendar.html" class="bn-item"><i class="ti ti-calendar"></i><span>Calendar</span></a>
-  <a href="mindmapv20.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
+  <a href="mindmapv21.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
 </nav>
 
 <!-- Task Modal -->
@@ -1096,6 +1190,8 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
     <input id="proj-modal-name" type="text" placeholder="Project name..." autocomplete="off">
     <label>Color</label>
     <div class="color-palette" id="color-palette"></div>
+    <label>Tags</label>
+    <div id="proj-modal-tags-picker" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px"></div>
     <label>Notes</label>
     <textarea id="proj-modal-notes" placeholder="Project notes, goals, context…"></textarea>
     <div class="proj-modal-footer">
@@ -1104,6 +1200,23 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
         <button class="btn-cancel" onclick="closeProjModal()">Cancel</button>
         <button id="proj-save-btn" class="btn-primary" onclick="saveProj()">Save</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Step edit modal -->
+<div id="step-modal-overlay" onclick="closeStepModal()">
+  <div id="step-modal" onclick="event.stopPropagation()">
+    <h3 id="step-modal-title">Edit Step</h3>
+    <label>Step text</label>
+    <input id="step-modal-text" type="text" placeholder="Step description…" autocomplete="off">
+    <label>Delegate to</label>
+    <input id="step-modal-delegate" type="text" placeholder="Person name (optional)…" autocomplete="off">
+    <label>Tags</label>
+    <div id="step-modal-tags-picker" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeStepModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveStepModal()">Save</button>
     </div>
   </div>
 </div>
@@ -1178,7 +1291,11 @@ function ensureDefaults() {
   if (!D.projects) D.projects = [];
   if (!D.focus)    D.focus    = [];
   if (!D.tags)     D.tags     = DEFAULT_TAGS.map(function(t){return{id:t.id,name:t.name,color:t.color};});
-  D.tasks.forEach(function(t){ if (!t.tags) t.tags=[]; });
+  D.tasks.forEach(function(t){
+    if (!t.tags) t.tags=[];
+    (t.steps||[]).forEach(function(s){ if(!s.tags) s.tags=[]; });
+  });
+  D.projects.forEach(function(p){ if(!p.tags) p.tags=[]; });
 }
 
 async function ld() {
@@ -1397,21 +1514,17 @@ function deleteProjSwipe(id) {
   sv(); render();
 }
 
-function editStepSwipe(sid) {
-  var t = aid ? gt(aid) : null; if (!t) return;
-  var s = t.steps.find(function(x){ return x.id===sid; }); if (!s) return;
-  var v = prompt('Edit step:', s.text); if (v===null || !v.trim()) return;
-  s.text = v.trim();
-  lg('Step edited: "'+v.trim()+'"');
-  sv(); renderDetail();
-}
+function editStepSwipe(sid) { openStepModal(sid); }
 
 /* ── Focus list ─────────────────────────────────────────── */
 /* ── Mode: all / focus / tags / people ──────────────────── */
 var currentMode = 'all';
 var activeTagId  = null;
-var editingTags  = []; // temp tags during modal edit
-var newTagColor  = '#007AFF';
+var editingTags     = []; // temp tags during task modal edit
+var editingProjTags = []; // temp tags during project modal edit
+var editingStepTags = []; // temp tags during step modal edit
+var editingStepId   = null; // step being edited in step modal
+var newTagColor     = '#007AFF';
 
 var DEFAULT_TAGS = [
   {id:'meeting',  name:'Meeting',   color:'#007AFF'},
@@ -1678,18 +1791,67 @@ function deleteTag(id) {
 }
 
 /* ── Tag picker in task modal ───────────────────────────── */
-function renderModalTagPicker() {
-  var tags = D.tags||[];
-  document.getElementById('modal-tags-picker').innerHTML = tags.map(function(tag){
-    var sel = editingTags.indexOf(tag.id)>-1;
-    return '<button class="tag-sel-chip'+(sel?' selected':'')+'" style="--tc:'+tag.color+'" onclick="toggleEditTag(\''+tag.id+'\')">'+xe(tag.name)+'</button>';
-  }).join('') || '<span style="font-size:12px;color:var(--muted)">No tags yet — manage in Tags tab</span>';
+function _tagPickerHtml(tags, selArr, toggleFn, noTagsEl) {
+  var html = tags.map(function(tag){
+    var sel = selArr.indexOf(tag.id)>-1;
+    return '<button class="tag-sel-chip'+(sel?' selected':'')+'" style="--tc:'+tag.color+'" onclick="'+toggleFn+'(\''+tag.id+'\')">'+xe(tag.name)+'</button>';
+  }).join('');
+  document.getElementById(noTagsEl).innerHTML = html || '<span style="font-size:12px;color:var(--muted)">No tags — manage in Tags tab</span>';
 }
 
+function renderModalTagPicker() {
+  _tagPickerHtml(D.tags||[], editingTags, 'toggleEditTag', 'modal-tags-picker');
+}
 function toggleEditTag(id) {
-  var i = editingTags.indexOf(id);
-  if (i>-1) editingTags.splice(i,1); else editingTags.push(id);
+  var i=editingTags.indexOf(id); if(i>-1) editingTags.splice(i,1); else editingTags.push(id);
   renderModalTagPicker();
+}
+
+function renderProjModalTagPicker() {
+  _tagPickerHtml(D.tags||[], editingProjTags, 'toggleProjTag', 'proj-modal-tags-picker');
+}
+function toggleProjTag(id) {
+  var i=editingProjTags.indexOf(id); if(i>-1) editingProjTags.splice(i,1); else editingProjTags.push(id);
+  renderProjModalTagPicker();
+}
+
+function renderStepModalTagPicker() {
+  _tagPickerHtml(D.tags||[], editingStepTags, 'toggleStepTag', 'step-modal-tags-picker');
+}
+function toggleStepTag(id) {
+  var i=editingStepTags.indexOf(id); if(i>-1) editingStepTags.splice(i,1); else editingStepTags.push(id);
+  renderStepModalTagPicker();
+}
+
+/* ── Step edit modal ────────────────────────────────────── */
+function openStepModal(sid, taskId) {
+  var tId = taskId || aid;
+  var t = gt(tId); if (!t) return;
+  var s = t.steps.find(function(x){ return x.id===sid; }); if (!s) return;
+  editingStepId = sid;
+  if (taskId) aid = taskId; // ensure aid set for save
+  document.getElementById('step-modal-text').value = s.text;
+  document.getElementById('step-modal-delegate').value = s.delegatedTo||'';
+  editingStepTags = (s.tags||[]).slice();
+  renderStepModalTagPicker();
+  document.getElementById('step-modal-overlay').classList.add('open');
+  setTimeout(function(){ document.getElementById('step-modal-text').focus(); }, 60);
+}
+function closeStepModal() {
+  document.getElementById('step-modal-overlay').classList.remove('open');
+  editingStepId = null; editingStepTags = [];
+}
+function saveStepModal() {
+  var text = document.getElementById('step-modal-text').value.trim(); if (!text) return;
+  var delg = document.getElementById('step-modal-delegate').value.trim();
+  var t = gt(aid); if (!t) return;
+  var s = t.steps.find(function(x){ return x.id===editingStepId; }); if (!s) return;
+  s.text = text;
+  s.tags = editingStepTags.slice();
+  if (delg) { s.delegated=true; s.delegatedTo=delg; }
+  else { s.delegated=false; s.delegatedTo=null; }
+  lg('Step updated in "'+t.title+'": '+text);
+  sv(); closeStepModal(); render();
 }
 
 function render() {
@@ -1823,6 +1985,157 @@ function saveProjNotes() {
   if(fl){fl.classList.add('show');setTimeout(function(){fl.classList.remove('show');},1700);}
 }
 
+/* ── Full alive project view ────────────────────────────── */
+var collapsedProjTasks = {}; // track expanded tasks in project view
+
+function renderProjView(el, p) {
+  var ptasks = D.tasks.filter(function(t){return t.projectId===p.id;});
+  var done2  = ptasks.filter(function(t){return t.done;}).length;
+  var active2 = ptasks.length - done2;
+  var avg = ptasks.length ? Math.round(ptasks.reduce(function(s,t){return s+pct(t);},0)/ptasks.length) : 0;
+  var projTags = (p.tags||[]).map(function(tid2){
+    var tg=(D.tags||[]).find(function(x){return x.id===tid2;});
+    return tg?'<span class="proj-view-tag" style="background:'+tg.color+'22;color:'+tg.color+'">'+xe(tg.name)+'</span>':'';
+  }).join('');
+
+  var tasksHtml = ptasks.map(function(t){
+    var expanded = collapsedProjTasks[t.id] === true;
+    var doneS = (t.steps||[]).filter(function(s){return s.done;}).length;
+    var stepsTotal = (t.steps||[]).length;
+    var taskTagHtml = (t.tags||[]).map(function(tid2){
+      var tg=(D.tags||[]).find(function(x){return x.id===tid2;});
+      return tg?'<span class="task-tag" style="background:'+tg.color+'22;color:'+tg.color+'">'+xe(tg.name)+'</span>':'';
+    }).join('');
+    var metaStr = stepsTotal ? doneS+'/'+stepsTotal+' steps' : 'No steps';
+    if (t.assignee) metaStr += ' · '+xe(t.assignee);
+    var pinned = isFocused('task', t.id);
+
+    var stepsHtml = '';
+    if (expanded) {
+      stepsHtml = '<div class="proj-steps-block">'+
+        (t.steps||[]).map(function(s){
+          var stepTagHtml=(s.tags||[]).map(function(tid2){var tg=(D.tags||[]).find(function(x){return x.id===tid2;});return tg?'<span class="step-tag" style="background:'+tg.color+'22;color:'+tg.color+'">'+xe(tg.name)+'</span>':'';}).join('');
+          var stepPinned = isFocused('step', s.id);
+          var delegHtml = (s.delegated&&s.delegatedTo)?'<div class="proj-step-deleg"><i class="ti ti-arrow-forward"></i> '+xe(s.delegatedTo)+'</div>':'';
+          return '<div class="proj-step-row">'+
+            '<div class="proj-step-chk'+(s.done?' done':'')+'" onclick="toggleStepInProjView(\''+t.id+'\',\''+s.id+'\')">'+
+              (s.done?'<i class="ti ti-check"></i>':'')+
+            '</div>'+
+            '<div class="proj-step-body">'+
+              '<div class="proj-step-text'+(s.done?' done':'')+'">'+xe(s.text)+'</div>'+
+              delegHtml+
+              (stepTagHtml?'<div class="step-tags" style="margin-top:2px">'+stepTagHtml+'</div>':'')+
+            '</div>'+
+            '<div class="proj-step-acts">'+
+              '<button class="proj-step-btn" onclick="openStepModal(\''+s.id+'\',\''+t.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>'+
+              '<button class="proj-step-btn'+(stepPinned?' pin-on':'')+'" onclick="toggleFocus(\'step\',\''+s.id+'\',\''+t.id+'\')" title="Focus"><i class="ti ti-pin"></i></button>'+
+              '<button class="proj-step-btn del" onclick="delStepInProjView(\''+t.id+'\',\''+s.id+'\')" title="Delete"><i class="ti ti-trash"></i></button>'+
+            '</div>'+
+          '</div>';
+        }).join('')+
+        '<div class="proj-add-step">'+
+          '<input id="padd-'+t.id+'" type="text" placeholder="Add step…" autocomplete="off" onkeydown="if(event.key===\'Enter\')addStepInProjView(\''+t.id+'\')">'+
+          '<button onclick="addStepInProjView(\''+t.id+'\')">+ Add</button>'+
+        '</div>'+
+      '</div>';
+    }
+
+    return '<div class="proj-task-block">'+
+      '<div class="proj-task-row">'+
+        '<div class="proj-task-check" onclick="toggleDoneInProjView(\''+t.id+'\')">'+
+          '<div class="ck'+(t.done?' done':'')+'">'+( t.done?'<i class="ti ti-check"></i>':'')+'</div>'+
+        '</div>'+
+        '<div class="proj-task-body" onclick="toggleProjTask(\''+t.id+'\')">'+
+          '<div class="proj-task-name'+(t.done?' done':'')+'">'+xe(t.title)+'</div>'+
+          '<div class="proj-task-meta">'+metaStr+(taskTagHtml?'<span style="margin-left:4px">'+taskTagHtml+'</span>':'')+'</div>'+
+        '</div>'+
+        '<div class="proj-task-acts">'+
+          '<button class="proj-task-btn'+(pinned?' pin-on':'')+'" onclick="toggleFocus(\'task\',\''+t.id+'\')" title="Focus"><i class="ti ti-pin"></i></button>'+
+          '<button class="proj-task-btn" onclick="openModal(\''+t.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>'+
+          '<button class="proj-task-btn" onclick="sel(\''+t.id+'\')" title="Open detail"><i class="ti ti-chevron-right"></i></button>'+
+          '<button class="proj-task-btn danger" onclick="deleteTask(\''+t.id+'\')" title="Delete"><i class="ti ti-trash"></i></button>'+
+        '</div>'+
+      '</div>'+
+      stepsHtml+
+    '</div>';
+  }).join('');
+
+  el.innerHTML =
+    '<button class="btn-mob-back" onclick="mobileBack()" style="display:none" id="mob-back-btn"><i class="ti ti-chevron-left"></i> Tasks</button>'+
+    '<div class="proj-view-hdr">'+
+      '<div class="proj-view-dot" style="background:'+p.color+'"></div>'+
+      '<div class="proj-view-name" style="color:'+p.color+'">'+xe(p.name)+'</div>'+
+      '<div class="proj-view-act">'+
+        '<button class="btn-icon" onclick="openProjModal(\''+p.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>'+
+        '<button class="btn-icon danger" onclick="deleteProjView(\''+p.id+'\')" title="Delete"><i class="ti ti-trash"></i></button>'+
+      '</div>'+
+    '</div>'+
+    (projTags?'<div class="proj-view-tags">'+projTags+'</div>':'')+
+    '<div class="proj-view-stats">'+
+      '<div class="proj-view-stat"><div class="proj-view-stat-n" style="color:var(--accent)">'+active2+'</div><div class="proj-view-stat-l">Active</div></div>'+
+      '<div class="proj-view-stat"><div class="proj-view-stat-n" style="color:var(--green)">'+done2+'</div><div class="proj-view-stat-l">Done</div></div>'+
+      '<div class="proj-view-stat"><div class="proj-view-stat-n">'+avg+'%</div><div class="proj-view-stat-l">Progress</div></div>'+
+    '</div>'+
+    '<div class="proj-view-prog"><div class="proj-view-prog-fill" style="width:'+avg+'%;background:'+p.color+'"></div></div>'+
+    '<button class="proj-view-add-btn" onclick="openModalForProj(\''+p.id+'\')"><i class="ti ti-plus"></i> Add Task to this Project</button>'+
+    (tasksHtml || '<div style="padding:20px 14px;color:var(--muted);font-size:13px">No tasks yet — add one above.</div>')+
+    '<div class="proj-notes-section">'+
+      '<label>Project Notes</label>'+
+      '<textarea class="proj-notes-ta" id="proj-notes-ta" placeholder="Goals, context, links…">'+xe(p.notes||'')+'</textarea>'+
+      '<div class="notes-footer" style="margin-top:6px">'+
+        '<button class="btn-save" onclick="saveProjNotes()"><i class="ti ti-device-floppy"></i> Save notes</button>'+
+        '<span class="saved-flash" id="proj-notes-flash"><i class="ti ti-check"></i> Saved</span>'+
+      '</div>'+
+    '</div>';
+}
+
+function toggleProjTask(tid) {
+  collapsedProjTasks[tid] = !collapsedProjTasks[tid];
+  renderDetail();
+}
+
+function toggleDoneInProjView(tid) {
+  var t=gt(tid); if(!t) return; t.done=!t.done; sv(); renderDetail(); renderList();
+}
+
+function toggleStepInProjView(taskId, sid) {
+  var t=gt(taskId); if(!t) return;
+  var s=t.steps.find(function(x){return x.id===sid;}); if(!s) return;
+  s.done=!s.done; sv(); renderDetail(); renderList();
+}
+
+function addStepInProjView(taskId) {
+  var inp=document.getElementById('padd-'+taskId); if(!inp) return;
+  var text=inp.value.trim(); if(!text) return;
+  var t=gt(taskId); if(!t) return;
+  t.steps.push({id:uid(),text:text,done:false,tags:[]});
+  lg('Step added to "'+t.title+'": '+text);
+  sv(); renderDetail(); renderList();
+}
+
+function delStepInProjView(taskId, sid) {
+  var t=gt(taskId); if(!t) return;
+  t.steps=t.steps.filter(function(s){return s.id!==sid;});
+  sv(); renderDetail(); renderList();
+}
+
+function openModalForProj(projId) {
+  openModal(null);
+  setTimeout(function(){
+    var sel=document.getElementById('modal-project');
+    if(sel) sel.value=projId;
+  }, 30);
+}
+
+function deleteProjView(id) {
+  var p=gp(id); if(!p) return;
+  if(!confirm('Delete project "'+p.name+'"? Tasks will become standalone.')) return;
+  D.projects=D.projects.filter(function(x){return x.id!==id;});
+  D.tasks.forEach(function(t){if(t.projectId===id)t.projectId=null;});
+  lg('Project deleted: "'+p.name+'"');
+  viewProjId=null; sv(); render();
+}
+
 function renderDetail() {
   var el = document.getElementById('detail');
 
@@ -1831,31 +2144,7 @@ function renderDetail() {
     var p = gp(viewProjId);
     if (!p) { viewProjId=null; }
     else {
-      var ptasks = D.tasks.filter(function(t){return t.projectId===p.id;});
-      var done2 = ptasks.filter(function(t){return t.done;}).length;
-      var active2 = ptasks.length - done2;
-      var avg = ptasks.length ? Math.round(ptasks.reduce(function(s,t){return s+pct(t);},0)/ptasks.length) : 0;
-      el.innerHTML=
-        '<div class="detail-inner">'+
-          '<button class="btn-mob-back" onclick="mobileBack()" style="display:none" id="mob-back-btn"><i class="ti ti-chevron-left"></i> Tasks</button>'+
-          '<div class="proj-detail-hdr">'+
-            '<div class="proj-detail-dot" style="background:'+p.color+'"></div>'+
-            '<div class="proj-detail-name">'+xe(p.name)+'</div>'+
-            '<button class="btn-icon" onclick="openProjModal(\''+p.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>'+
-          '</div>'+
-          '<div class="proj-stat-row">'+
-            '<div class="proj-stat"><div class="proj-stat-n" style="color:var(--accent)">'+active2+'</div><div class="proj-stat-l">Active</div></div>'+
-            '<div class="proj-stat"><div class="proj-stat-n" style="color:var(--green)">'+done2+'</div><div class="proj-stat-l">Done</div></div>'+
-            '<div class="proj-stat"><div class="proj-stat-n">'+avg+'%</div><div class="proj-stat-l">Progress</div></div>'+
-          '</div>'+
-          '<div class="detail-prog" style="margin-bottom:20px;height:5px"><div class="prog-fill" style="width:'+avg+'%;background:'+p.color+'"></div></div>'+
-          '<div class="proj-notes-lbl">Notes</div>'+
-          '<textarea class="proj-notes-ta" id="proj-notes-ta" placeholder="Project notes, goals, context…">'+xe(p.notes||'')+'</textarea>'+
-          '<div class="notes-footer" style="margin-top:6px">'+
-            '<button class="btn-save" onclick="saveProjNotes()"><i class="ti ti-device-floppy"></i> Save notes</button>'+
-            '<span class="saved-flash" id="proj-notes-flash"><i class="ti ti-check"></i> Saved</span>'+
-          '</div>'+
-        '</div>';
+      renderProjView(el, p);
       var bb=document.getElementById('mob-back-btn');
       if(bb) bb.style.display=isMob()?'flex':'none';
       return;
@@ -1924,6 +2213,8 @@ function renderSteps(el) {
         var rowCls='step-row'+(s.done?' done':(s.current?' curr':''));
         var chkCls='step-check'+(s.done?' checked':(s.current?' curr-check':''));
         var delegHtml=(s.delegated&&s.delegatedTo)?'<div class="step-deleg"><i class="ti ti-arrow-forward"></i>'+xe(s.delegatedTo)+'</div>':'';
+        var stepTagsHtml=(s.tags||[]).length?'<div class="step-tags">'+
+          (s.tags||[]).map(function(tid2){var tg=(D.tags||[]).find(function(x){return x.id===tid2;});return tg?'<span class="step-tag" style="background:'+tg.color+'22;color:'+tg.color+'">'+xe(tg.name)+'</span>':'';}).join('')+'</div>':'';
         var cnt=(s.subs||[]).length;
         var open=xsubs[s.id];
         var subsColor=open?' style="color:var(--accent)"':'';
@@ -1945,7 +2236,7 @@ function renderSteps(el) {
               '<div class="'+chkCls+'" onclick="toggleStep(\''+s.id+'\')">'+
                 (s.done?'<i class="ti ti-check"></i>':'')+
               '</div>'+
-              '<div class="step-body"><div class="step-text">'+xe(s.text)+'</div>'+delegHtml+'</div>'+
+              '<div class="step-body"><div class="step-text">'+xe(s.text)+'</div>'+delegHtml+stepTagsHtml+'</div>'+
               '<div class="step-acts">'+
                 currBtn+
                 '<button class="step-btn" onclick="delegSt(\''+s.id+'\')"'+delegColor+' title="Delegate"><i class="ti ti-user-share"></i></button>'+
@@ -2008,27 +2299,29 @@ function openProjModal(id) {
   var nameEl = document.getElementById('proj-modal-name');
   var notesEl = document.getElementById('proj-modal-notes');
   var delBtn = document.getElementById('proj-del-btn');
-  buildColorPalette();
   if (editProjId) {
     var p = gp(editProjId);
     document.getElementById('proj-modal-title').textContent = 'Edit project';
     nameEl.value = p ? p.name : '';
     notesEl.value = p ? (p.notes||'') : '';
     selColor = p ? p.color : PROJ_COLORS[0];
+    editingProjTags = (p&&p.tags)?p.tags.slice():[];
     delBtn.style.display = 'block';
   } else {
     document.getElementById('proj-modal-title').textContent = 'New project';
     nameEl.value = ''; notesEl.value = '';
     selColor = PROJ_COLORS[0];
+    editingProjTags = [];
     delBtn.style.display = 'none';
   }
   buildColorPalette();
+  renderProjModalTagPicker();
   document.getElementById('proj-modal-overlay').classList.add('open');
   setTimeout(function(){ nameEl.focus(); }, 50);
 }
 function closeProjModal() {
   document.getElementById('proj-modal-overlay').classList.remove('open');
-  editProjId = null;
+  editProjId = null; editingProjTags = [];
 }
 function buildColorPalette() {
   var pal = document.getElementById('color-palette');
@@ -2042,11 +2335,11 @@ function saveProj() {
   var notes = document.getElementById('proj-modal-notes').value;
   if (editProjId) {
     var p = gp(editProjId); if (!p) return;
-    p.name = name; p.color = selColor; p.notes = notes;
+    p.name = name; p.color = selColor; p.notes = notes; p.tags = editingProjTags.slice();
     lg('Project updated: "'+name+'"');
     if (viewProjId === editProjId) renderDetail();
   } else {
-    D.projects.push({id:uid(), name:name, color:selColor, notes:notes, createdAt:new Date().toISOString()});
+    D.projects.push({id:uid(), name:name, color:selColor, notes:notes, tags:editingProjTags.slice(), createdAt:new Date().toISOString()});
     lg('Project created: "'+name+'"');
   }
   sv(); closeProjModal(); render();
@@ -2066,7 +2359,7 @@ function addStep() {
   var text=inp?inp.value.trim():''; if(!text) return;
   var t=gt(aid); if(!t) return;
   var hasCurr=t.steps.some(function(s){return s.current&&!s.done;});
-  t.steps.push({id:uid(),text:text,done:false,current:!hasCurr,delegated:false,delegatedTo:null,subs:[]});
+  t.steps.push({id:uid(),text:text,done:false,current:!hasCurr,delegated:false,delegatedTo:null,subs:[],tags:[]});
   lg('Step added in "'+t.title+'": '+text);
   sv(); render();
   var ni=document.getElementById('step-input'); if(ni) ni.focus();

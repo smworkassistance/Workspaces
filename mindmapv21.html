@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Chain AI</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  -webkit-font-smoothing:antialiased;background:#F2F2F7;
+  color:rgba(0,0,0,.87);
+}
+
+/* ── Topbar ── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  height:calc(48px + env(safe-area-inset-top,0px));
+  padding-top:env(safe-area-inset-top,0px);
+  background:rgba(242,242,247,.92);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:.5px solid rgba(60,60,67,.22);
+  display:flex;align-items:center;gap:8px;
+  padding-left:12px;padding-right:12px;
+}
+.btn-back{
+  display:flex;align-items:center;gap:2px;color:#7C6FFF;
+  background:none;border:none;font-size:17px;font-family:inherit;
+  cursor:pointer;padding:6px 4px;touch-action:manipulation;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-back i{font-size:19px}
+#tb-title{font-size:17px;font-weight:700;flex:1;letter-spacing:-.02em;text-align:center}
+.tb-icon-btn{
+  width:34px;height:34px;border:none;background:transparent;
+  border-radius:8px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;color:rgba(60,60,67,.6);font-size:18px;
+  touch-action:manipulation;flex-shrink:0;-webkit-tap-highlight-color:transparent;
+}
+.tb-icon-btn:active{background:rgba(0,0,0,.06)}
+
+/* ── Mobile tabs (visible only on mobile) ── */
+#mob-tabs{
+  display:none;position:fixed;
+  top:calc(48px + env(safe-area-inset-top,0px));
+  left:0;right:0;z-index:40;
+  background:rgba(242,242,247,.95);
+  border-bottom:.5px solid rgba(60,60,67,.18);
+  display:none;
+}
+.mob-tab{
+  flex:1;padding:9px 0;border:none;background:none;
+  font-size:13px;font-weight:600;color:rgba(60,60,67,.5);
+  cursor:pointer;font-family:inherit;letter-spacing:.02em;
+  border-bottom:2px solid transparent;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.mob-tab.active{color:#7C6FFF;border-bottom-color:#7C6FFF}
+
+/* ── Bottom Nav ── */
+#bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  height:calc(49px + env(safe-area-inset-bottom,0px));
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:rgba(242,242,247,.95);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:.5px solid rgba(60,60,67,.18);display:flex;
+}
+.bn-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;
+  color:rgba(60,60,67,.4);text-decoration:none;
+  font-size:10px;font-weight:600;letter-spacing:.02em;
+  padding-top:6px;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.bn-item i{font-size:23px;line-height:1}
+.bn-item.active{color:#7C6FFF}
+
+/* ── Main layout ── */
+#main{
+  display:flex;flex-direction:column;
+  position:fixed;
+  top:calc(48px + env(safe-area-inset-top,0px));
+  left:0;right:0;
+  bottom:calc(49px + env(safe-area-inset-bottom,0px));
+  overflow:hidden;
+}
+
+/* ── Drawer (KB + Log) — slides in from left ── */
+#drawer-overlay{
+  display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,.35);
+}
+#drawer-overlay.open{display:block}
+#drawer{
+  position:fixed;top:0;left:0;bottom:0;z-index:101;
+  width:min(85vw,320px);
+  background:#fff;
+  box-shadow:4px 0 24px rgba(0,0,0,.12);
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateX(-100%);
+  transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+#drawer.open{transform:translateX(0)}
+#drawer-head{
+  display:flex;align-items:center;gap:0;
+  padding-top:env(safe-area-inset-top,0px);
+  background:#7C6FFF;flex-shrink:0;
+}
+#drawer-title{
+  font-size:17px;font-weight:700;color:#fff;
+  padding:14px 16px;flex:1;letter-spacing:-.02em;
+}
+.drawer-close{
+  width:44px;height:44px;background:transparent;border:none;
+  color:rgba(255,255,255,.8);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+#drawer-tabs{
+  display:flex;border-bottom:.5px solid rgba(60,60,67,.12);flex-shrink:0;
+}
+.sb-tab{
+  flex:1;padding:10px 0;border:none;background:none;
+  font-size:13px;font-weight:700;color:rgba(60,60,67,.45);
+  cursor:pointer;font-family:inherit;letter-spacing:.03em;
+  border-bottom:2px solid transparent;touch-action:manipulation;
+}
+.sb-tab.active{color:#7C6FFF;border-bottom-color:#7C6FFF}
+#sb-kb{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+#sb-log{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;flex-direction:column}
+#sb-kb-header{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px 8px;
+  border-bottom:.5px solid rgba(60,60,67,.08);flex-shrink:0;
+}
+#kb-header-title{font-size:13px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:rgba(60,60,67,.5);flex:1}
+.btn-add-row{
+  width:28px;height:28px;border-radius:8px;border:1.5px solid #7C6FFF;
+  background:transparent;color:#7C6FFF;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.btn-add-row:active{background:rgba(124,111,255,.1)}
+#kb-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 0}
+
+/* KB rows */
+.kb-row{
+  padding:10px 14px;cursor:pointer;
+  border-bottom:.5px solid rgba(60,60,67,.08);
+  transition:background .1s;
+}
+.kb-row:active{background:rgba(0,0,0,.04)}
+.kb-row.pinned{background:rgba(124,111,255,.04)}
+.kb-row-head{
+  font-size:13px;font-weight:700;color:rgba(0,0,0,.82);
+  margin-bottom:2px;display:flex;align-items:center;gap:6px;
+}
+.kb-row-pin{font-size:10px;color:#7C6FFF;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+  background:rgba(124,111,255,.1);border-radius:4px;padding:1px 5px}
+.kb-row-exp{font-size:12px;color:rgba(60,60,67,.5);line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* ── Chat Panel (right) ── */
+#chat-panel{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:#F2F2F7;
+}
+#chat-toolbar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;background:#fff;
+  border-bottom:.5px solid rgba(60,60,67,.1);flex-shrink:0;
+}
+#chat-toolbar-lbl{font-size:12px;font-weight:600;color:rgba(60,60,67,.4);
+  text-transform:uppercase;letter-spacing:.07em;flex:1}
+.chat-tool-btn{
+  padding:4px 11px;border-radius:8px;border:1px solid rgba(60,60,67,.18);
+  background:transparent;font-size:12px;font-weight:600;
+  color:rgba(60,60,67,.6);cursor:pointer;font-family:inherit;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.chat-tool-btn:active{background:rgba(0,0,0,.05)}
+.chat-tool-btn.accent{border-color:#7C6FFF;color:#7C6FFF}
+#chat-msgs{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:14px 12px;display:flex;flex-direction:column;gap:8px;
+}
+.msg-wrap{display:flex;flex-direction:column;max-width:82%}
+.msg-wrap.user{align-self:flex-end;align-items:flex-end}
+.msg-wrap.ai{align-self:flex-start;align-items:flex-start}
+.msg-bubble{
+  padding:10px 14px;border-radius:18px;
+  font-size:15px;line-height:1.55;word-break:break-word;
+}
+.msg-wrap.user .msg-bubble{
+  background:#7C6FFF;color:#fff;
+  border-bottom-right-radius:4px;
+}
+.msg-wrap.ai .msg-bubble{
+  background:#fff;color:rgba(0,0,0,.85);
+  border-bottom-left-radius:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);
+  white-space:pre-wrap;
+}
+.msg-time{font-size:11px;color:rgba(60,60,67,.35);margin-top:3px;padding:0 4px}
+.msg-ai-label{
+  font-size:11px;font-weight:700;letter-spacing:.06em;
+  color:#7C6FFF;margin-bottom:3px;padding-left:2px;text-transform:uppercase;
+}
+#chat-input-wrap{
+  display:flex;align-items:flex-end;gap:8px;
+  padding:10px 12px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  background:#fff;border-top:.5px solid rgba(60,60,67,.12);flex-shrink:0;
+}
+#chat-input{
+  flex:1;border:1.5px solid rgba(60,60,67,.18);border-radius:20px;
+  padding:9px 14px;font-size:16px;font-family:inherit;
+  background:#F2F2F7;resize:none;outline:none;
+  max-height:120px;overflow-y:auto;line-height:1.45;
+  transition:border-color .15s;
+}
+#chat-input:focus{border-color:#7C6FFF}
+#send-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:#7C6FFF;border:none;color:#fff;
+  font-size:18px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  transition:opacity .15s;
+}
+#send-btn:active{opacity:.75}
+#send-btn:disabled{background:rgba(60,60,67,.18);cursor:default}
+.typing-indicator{
+  display:flex;align-items:center;gap:4px;padding:10px 14px;
+  background:#fff;border-radius:18px;border-bottom-left-radius:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.07);width:fit-content;
+}
+.typing-dot{
+  width:7px;height:7px;border-radius:50%;background:#7C6FFF;opacity:.5;
+  animation:typingBounce 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2){animation-delay:.18s}
+.typing-dot:nth-child(3){animation-delay:.36s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px);opacity:1}}
+
+/* ── Modals ── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.4);backdrop-filter:blur(4px);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.modal-overlay.hidden{display:none}
+.modal-sheet{
+  width:100%;max-width:540px;
+  background:#fff;border-radius:20px 20px 0 0;
+  padding:20px 20px;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  animation:slideUp .25s cubic-bezier(.4,0,.2,1);
+  max-height:90vh;overflow-y:auto;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:rgba(60,60,67,.18);
+  border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px;text-align:center;letter-spacing:-.02em}
+.modal-label{font-size:13px;font-weight:600;color:rgba(60,60,67,.5);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;margin-top:14px}
+.modal-input{
+  width:100%;padding:11px 14px;border:1.5px solid rgba(60,60,67,.2);
+  border-radius:12px;font-size:16px;font-family:inherit;outline:none;
+  transition:border-color .15s;background:#F2F2F7;
+}
+.modal-input:focus{border-color:#7C6FFF}
+.modal-textarea{
+  width:100%;padding:11px 14px;border:1.5px solid rgba(60,60,67,.2);
+  border-radius:12px;font-size:15px;font-family:inherit;outline:none;
+  resize:none;line-height:1.55;min-height:120px;
+  transition:border-color .15s;background:#F2F2F7;
+}
+.modal-textarea:focus{border-color:#7C6FFF}
+.modal-hint{font-size:12px;color:rgba(60,60,67,.4);margin-top:6px;line-height:1.5}
+.modal-footer{display:flex;gap:10px;margin-top:18px}
+.btn-cancel{
+  flex:1;padding:13px;border-radius:12px;border:1.5px solid rgba(60,60,67,.2);
+  background:transparent;font-size:16px;font-weight:600;color:rgba(60,60,67,.6);
+  cursor:pointer;font-family:inherit;touch-action:manipulation;
+}
+.btn-primary{
+  flex:2;padding:13px;border-radius:12px;border:none;
+  background:#7C6FFF;color:#fff;font-size:16px;font-weight:700;
+  cursor:pointer;font-family:inherit;touch-action:manipulation;
+}
+.btn-primary:active{opacity:.85}
+.btn-del{
+  padding:13px 18px;border-radius:12px;border:1.5px solid rgba(255,59,48,.3);
+  background:transparent;font-size:15px;font-weight:600;color:#FF3B30;
+  cursor:pointer;font-family:inherit;touch-action:manipulation;
+}
+.modal-key-note{
+  background:rgba(124,111,255,.07);border:1px solid rgba(124,111,255,.2);
+  border-radius:10px;padding:10px 12px;font-size:13px;color:rgba(60,60,67,.7);
+  line-height:1.55;margin-top:14px;
+}
+
+/* ── Log panel ── */
+#log-panel{
+  width:280px;flex-shrink:0;
+  background:#FAFAFA;
+  border-left:.5px solid rgba(60,60,67,.12);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#log-header{
+  display:flex;align-items:center;gap:8px;
+  padding:14px 14px 10px;
+  border-bottom:.5px solid rgba(60,60,67,.12);flex-shrink:0;
+}
+#log-header-title{font-size:13px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:rgba(60,60,67,.5);flex:1}
+.save-status{
+  font-size:11px;font-weight:600;letter-spacing:.02em;
+  padding:2px 7px;border-radius:6px;transition:opacity .4s;
+}
+.ss-saving {color:#FF9500;background:rgba(255,149,0,.1)}
+.ss-saved  {color:#34C759;background:rgba(52,199,89,.1)}
+.ss-error  {color:#FF3B30;background:rgba(255,59,48,.12)}
+.ss-offline{color:#FF3B30;background:rgba(255,59,48,.12)}
+#log-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 0}
+
+/* Log sections */
+.log-section-hdr{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:rgba(60,60,67,.4);
+  padding:10px 14px 4px;
+}
+.log-entry{
+  padding:8px 14px;border-bottom:.5px solid rgba(60,60,67,.06);
+}
+.log-entry-time{font-size:11px;color:rgba(60,60,67,.35);margin-bottom:2px}
+.log-entry-text{font-size:13px;color:rgba(0,0,0,.75);line-height:1.45}
+.log-entry-tag{
+  display:inline-block;font-size:10px;font-weight:700;
+  border-radius:4px;padding:1px 5px;margin-right:4px;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.tag-done{background:rgba(52,199,89,.12);color:#34C759}
+.tag-step{background:rgba(124,111,255,.1);color:#7C6FFF}
+.tag-task{background:rgba(255,149,0,.12);color:#FF9500}
+.tag-week{background:rgba(90,200,250,.12);color:#32ADE6}
+.tag-month{background:rgba(255,59,48,.08);color:#FF3B30}
+
+.log-summary-card{
+  margin:6px 14px;padding:10px 12px;
+  background:#fff;border-radius:10px;
+  border:.5px solid rgba(60,60,67,.1);
+  font-size:12.5px;color:rgba(0,0,0,.7);line-height:1.5;
+}
+.log-summary-label{font-size:11px;font-weight:700;color:rgba(60,60,67,.4);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.log-empty{padding:24px 14px;text-align:center;
+  font-size:13px;color:rgba(60,60,67,.3);line-height:1.6}
+
+/* chat panel always full width — drawer handles KB/Log */
+#chat-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+</style>
+</head>
+<body>
+
+<!-- Drawer overlay -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- Drawer (KB + Log) -->
+<div id="drawer">
+  <div id="drawer-head">
+    <div id="drawer-title">⚡ Chain AI</div>
+    <button class="drawer-close" onclick="closeDrawer()"><i class="ti ti-x"></i></button>
+  </div>
+  <div id="drawer-tabs">
+    <button class="sb-tab active" onclick="sbTab('kb')">Workstyle KB</button>
+    <button class="sb-tab" onclick="sbTab('log')">Action Log</button>
+  </div>
+  <div id="sb-kb">
+    <div id="sb-kb-header">
+      <span id="kb-header-title">My Workstyle</span>
+      <button class="btn-add-row" onclick="openRowModal()" title="Add row"><i class="ti ti-plus"></i></button>
+    </div>
+    <div id="kb-list"><div style="padding:20px;text-align:center;color:rgba(60,60,67,.35);font-size:13px">Loading…</div></div>
+  </div>
+  <div id="sb-log">
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:.5px solid rgba(60,60,67,.08);flex-shrink:0">
+      <span style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(60,60,67,.5);flex:1">Log</span>
+    </div>
+    <div id="log-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+      <div class="log-empty">No actions yet.<br>AI task edits will appear here.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Topbar -->
+<div id="topbar">
+  <button class="btn-back" onclick="openDrawer()" style="color:#7C6FFF;background:none;border:none;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;padding:6px 4px;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+    <i class="ti ti-menu-2" style="font-size:20px"></i>Chain AI
+  </button>
+  <div style="flex:1"></div>
+  <span id="save-status" class="save-status"></span>
+  <button class="tb-icon-btn" onclick="openSettings()" title="Model settings">
+    <i class="ti ti-settings"></i>
+  </button>
+</div>
+
+<!-- Main layout -->
+<div id="main">
+  <!-- Chat (full width, always visible) -->
+  <div id="chat-panel">
+    <div id="chat-toolbar">
+      <span id="chat-toolbar-lbl" style="font-size:13px;color:rgba(60,60,67,.45);font-weight:600">tap ☰ for KB & Log</span>
+      <button class="chat-tool-btn" onclick="clearChat()">Clear</button>
+    </div>
+    <div id="chat-msgs">
+      <div class="msg-wrap ai">
+        <div class="msg-ai-label">Chain AI</div>
+        <div class="msg-bubble">
+          Loading your tasks… I'll be ready in a moment. 🚀
+        </div>
+        <div class="msg-time">Now</div>
+      </div>
+    </div>
+    <div id="chat-input-wrap">
+      <textarea id="chat-input" placeholder="Ask anything about your tasks…" rows="1"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+      <button id="send-btn" onclick="sendMsg()"><i class="ti ti-arrow-up"></i></button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Row edit modal -->
+<div class="modal-overlay hidden" id="row-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="row-modal-title">Add to Workstyle KB</div>
+    <div class="modal-label">Head (Topic Name)</div>
+    <input class="modal-input" id="row-head" placeholder="e.g. Chain, Communication Style…"
+      maxlength="60" autocomplete="off">
+    <div class="modal-label">Explanation</div>
+    <textarea class="modal-textarea" id="row-exp"
+      placeholder="Describe this concept in your own words…" rows="5"></textarea>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeRowModal()">Cancel</button>
+      <button class="btn-del" id="row-del-btn" onclick="deleteRow()" style="display:none">Delete</button>
+      <button class="btn-primary" onclick="saveRow()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay hidden" id="settings-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">AI Settings</div>
+    <div class="modal-label">Gemini Model</div>
+    <input class="modal-input" id="model-input" placeholder="gemini-2.5-flash" autocomplete="off">
+    <div class="modal-hint">Default: <code>gemini-2.5-flash</code>. Calls via your Cloudflare Worker — no key needed here.</div>
+    <div class="modal-key-note" style="margin-top:14px">
+      🔒 API key is secured in your Cloudflare Worker. This app never handles the key directly.
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Supabase ────────────────────────────────────────────── */
+var SUPABASE_URL = 'https://ienfjretjvoupzwncnjb.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZqcmV0anZvdXB6d25jbmpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTU4NjcsImV4cCI6MjA5NzM3MTg2N30.zItQB5JjKGaM2gGR4eJWBGX4WGgvc1CEYG9Z1I7yU2A';
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── State ───────────────────────────────────────────────── */
+var kbRows  = [];        /* [{head, explanation, pinned?, id}] */
+var chatLog = [];        /* [{role:'user'|'ai', content, time}] */
+var taskData = null;     /* chain_state data (loaded on demand) */
+var editingRowId = null; /* null = new, else = id of row being edited */
+
+/* ── Default KB rows (seeded once on first load) ─────────── */
+var DEFAULT_ROWS = [
+  {
+    id: 'sys_prompt',
+    head: 'System Prompt',
+    pinned: true,
+    explanation: 'You are Chain AI — a focused work assistant embedded in the Chain task management app. You understand the Chain philosophy: every complex task moves forward through sequential steps — next call, next message, next follow-up, next decision. When the user shares their tasks via Load Tasks, you have their live projects and steps. Your job: help complete as many tasks as fast as possible. Always suggest the next specific chain action. Prefer delegation or 2-min quick follow-ups over doing it yourself — delegation is responsibility not avoidance. Time-block heavy work. Be direct and brief — no fluff. End every response with one clear "Next Chain" suggestion. If the user has not loaded tasks yet, ask them to tap the Load Tasks button in this app.'
+  },
+  {
+    id: 'context',
+    head: 'Context',
+    pinned: true,
+    explanation: 'Add important running context here — ongoing deals, current priorities, things AI should always know. Keep it compact and updated.'
+  },
+  {
+    id: 'chain_philosophy',
+    head: 'Chain',
+    pinned: false,
+    explanation: 'Each task is completed in chains. All new decided steps are added as steps and once a step is done we move to the next until the task is completed. Chain is just the next step — next communication, next follow-up — to bring the result. Chain is a result-oriented philosophy to complete any complex task.'
+  }
+];
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function xe(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+function ts(){
+  var n=new Date();
+  return ('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);
+}
+
+/* ── AI state (KB + Log combined) ───────────────────────── */
+var logData = { raw:[], daily:[], weekly:[], monthly:[] };
+
+/* ── Unified save (KB rows + log in one atomic upsert) ──── */
+var _saveTimer = null;
+var _aiSyncPending = false;
+function scheduleSave(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(saveAI, 600); }
+
+async function saveAI(){
+  var payload = {id:'main', rows:kbRows, log:logData};
+  /* Always persist locally first */
+  try{ localStorage.setItem('chain_ai_bak', JSON.stringify(payload)); }catch(e2){}
+  if(!navigator.onLine){ _aiSyncPending=true; setSaveStatus('offline'); return; }
+  setSaveStatus('saving');
+  try{
+    var res = await db.from('chain_ai').upsert(payload);
+    if(res.error) throw res.error;
+    _aiSyncPending = false;
+    setSaveStatus('saved');
+  }catch(e){
+    _aiSyncPending = true;
+    setSaveStatus('offline');
+    console.error('AI save error:', e);
+  }
+}
+
+/* Auto-sync KB/log when network returns */
+window.addEventListener('online',  function(){ if(_aiSyncPending) saveAI(); });
+window.addEventListener('offline', function(){ setSaveStatus('offline'); });
+
+function setSaveStatus(s){
+  var el = document.getElementById('save-status');
+  if(!el) return;
+  el.className = 'save-status ss-'+s;
+  el.textContent = s==='saving'?'Saving…':s==='offline'?'Offline':s==='error'?'Error':'Saved';
+  if(s==='saved') setTimeout(function(){ el.textContent=''; el.className='save-status'; }, 1800);
+}
+
+/* ── Load all AI data ────────────────────────────────────── */
+async function loadAI(){
+  var fallback = null;
+  try{
+    var bak = localStorage.getItem('chain_ai_bak');
+    if(bak) fallback = JSON.parse(bak);
+  }catch(e){}
+
+  try{
+    var r = await db.from('chain_ai').select('*').eq('id','main').maybeSingle();
+    if(r.error) throw r.error;
+    if(r.data){
+      if(r.data.rows && r.data.rows.length) kbRows = r.data.rows;
+      else kbRows = DEFAULT_ROWS.map(function(x){ return Object.assign({},x); });
+      if(r.data.log) logData = Object.assign({raw:[],daily:[],weekly:[],monthly:[]}, r.data.log);
+    } else {
+      /* First run: seed defaults and create the row */
+      kbRows = DEFAULT_ROWS.map(function(x){ return Object.assign({},x); });
+      await saveAI();
+    }
+  }catch(e){
+    console.error('AI load error:', e);
+    setSaveStatus('error');
+    if(fallback){
+      if(fallback.rows) kbRows = fallback.rows;
+      if(fallback.log) logData = Object.assign({raw:[],daily:[],weekly:[],monthly:[]}, fallback.log);
+    } else {
+      kbRows = DEFAULT_ROWS.map(function(x){ return Object.assign({},x); });
+    }
+  }
+}
+
+/* ── Append to action log ────────────────────────────────── */
+function appendLog(type, text){
+  var today = new Date().toISOString().slice(0,10);
+  var entry = { type:type, text:text, time:new Date().toISOString(), date:today };
+  if(!logData.raw) logData.raw = [];
+  logData.raw.unshift(entry);
+  if(logData.raw.length > 60) logData.raw = logData.raw.slice(0,60);
+  scheduleSave();
+  renderLog();
+}
+
+/* ── Auto-summarise (daily→weekly→monthly→6-month) ──────── */
+async function autoSummarise(){
+  var today = new Date().toISOString().slice(0,10);
+  var prevRaw = (logData.raw||[]).filter(function(e){ return e.date && e.date < today; });
+  if(!prevRaw.length) return;
+
+  /* Group previous-day raw entries by date */
+  var byDate = {};
+  prevRaw.forEach(function(e){
+    if(!byDate[e.date]) byDate[e.date] = [];
+    byDate[e.date].push(e);
+  });
+
+  var changed = false;
+  var sortedDates = Object.keys(byDate).sort();
+  for(var i=0;i<sortedDates.length;i++){
+    var date = sortedDates[i];
+    if((logData.daily||[]).find(function(d){ return d.date===date; })) continue;
+    var entries = byDate[date];
+    var rawTxt = entries.map(function(e){ return e.text; }).join('\n');
+    try{
+      var sum = await callGeminiRaw('Summarise these task actions from '+date+' into 1-2 sentences:\n\n'+rawTxt);
+      if(!logData.daily) logData.daily=[];
+      logData.daily.push({date:date, summary:sum});
+      logData.raw = logData.raw.filter(function(e){ return e.date!==date; });
+      changed = true;
+    }catch(e){ console.error('daily summarise',e); break; }
+  }
+
+  /* Daily → weekly when > 7 daily entries exist */
+  if(logData.daily && logData.daily.length > 7){
+    var old = logData.daily.slice(0, logData.daily.length-7);
+    var txt = old.map(function(d){ return d.date+': '+d.summary; }).join('\n');
+    try{
+      var ws = await callGeminiRaw('Summarise these daily summaries into one weekly summary (2-3 sentences):\n\n'+txt);
+      var wl = old[0].date+' – '+old[old.length-1].date;
+      if(!logData.weekly) logData.weekly=[];
+      logData.weekly.push({week:wl, summary:ws});
+      logData.daily = logData.daily.slice(logData.daily.length-7);
+      changed = true;
+    }catch(e){ console.error('weekly compress',e); }
+  }
+
+  /* Weekly → monthly when > 4 weekly entries exist */
+  if(logData.weekly && logData.weekly.length > 4){
+    var oldW = logData.weekly.slice(0, logData.weekly.length-4);
+    var txtW = oldW.map(function(w){ return w.week+': '+w.summary; }).join('\n');
+    try{
+      var ms = await callGeminiRaw('Summarise these weekly summaries into one monthly summary (2-3 sentences):\n\n'+txtW);
+      var ml = new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+      if(!logData.monthly) logData.monthly=[];
+      logData.monthly.push({month:ml, summary:ms});
+      logData.weekly = logData.weekly.slice(logData.weekly.length-4);
+      changed = true;
+    }catch(e){ console.error('monthly compress',e); }
+  }
+
+  /* Cap at 6 months rolling */
+  if(logData.monthly && logData.monthly.length > 6){
+    logData.monthly = logData.monthly.slice(logData.monthly.length-6);
+    changed = true;
+  }
+
+  if(changed){ await saveAI(); renderLog(); }
+}
+
+/* ── Render log ──────────────────────────────────────────── */
+function renderLog(){
+  var el = document.getElementById('log-body');
+  var parts = [];
+
+  if(logData.raw && logData.raw.length){
+    parts.push('<div class="log-section-hdr">Today</div>');
+    logData.raw.forEach(function(e){
+      var d = new Date(e.time);
+      var label = ('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+
+                  ' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+      var tag = e.type==='done'?'<span class="log-entry-tag tag-done">Done</span>':
+                e.type==='step'?'<span class="log-entry-tag tag-step">Step</span>':
+                '<span class="log-entry-tag tag-task">Task</span>';
+      parts.push('<div class="log-entry"><div class="log-entry-time">'+label+'</div>'+
+        '<div class="log-entry-text">'+tag+xe(e.text)+'</div></div>');
+    });
+  }
+
+  if(logData.daily && logData.daily.length){
+    parts.push('<div class="log-section-hdr" style="margin-top:8px">Daily Summaries</div>');
+    logData.daily.slice().reverse().forEach(function(d){
+      parts.push('<div class="log-summary-card">'+
+        '<div class="log-summary-label"><span class="log-entry-tag" style="background:rgba(52,199,89,.12);color:#34C759">Day</span>'+xe(d.date)+'</div>'+
+        xe(d.summary)+'</div>');
+    });
+  }
+
+  if(logData.weekly && logData.weekly.length){
+    parts.push('<div class="log-section-hdr" style="margin-top:8px">Weekly Summaries</div>');
+    logData.weekly.slice().reverse().forEach(function(w){
+      parts.push('<div class="log-summary-card">'+
+        '<div class="log-summary-label"><span class="log-entry-tag tag-week">Week</span>'+xe(w.week)+'</div>'+
+        xe(w.summary)+'</div>');
+    });
+  }
+
+  if(logData.monthly && logData.monthly.length){
+    parts.push('<div class="log-section-hdr" style="margin-top:8px">Monthly Summaries</div>');
+    logData.monthly.slice().reverse().forEach(function(m){
+      parts.push('<div class="log-summary-card">'+
+        '<div class="log-summary-label"><span class="log-entry-tag tag-month">Month</span>'+xe(m.month)+'</div>'+
+        xe(m.summary)+'</div>');
+    });
+  }
+
+  if(!parts.length){
+    el.innerHTML='<div class="log-empty">No actions yet.<br>Once AI starts editing your tasks,<br>everything will be logged here.</div>';
+    return;
+  }
+  el.innerHTML = parts.join('');
+}
+
+/* ── KB render (load now done via unified loadAI) ────────── */
+
+/* ── Render KB ───────────────────────────────────────────── */
+function renderKB(){
+  var pinned = kbRows.filter(function(r){ return r.pinned; });
+  var normal = kbRows.filter(function(r){ return !r.pinned; });
+  var all    = pinned.concat(normal);
+  var el     = document.getElementById('kb-list');
+  if(!all.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:rgba(60,60,67,.35);font-size:13px">No rows yet. Tap + to add.</div>';
+    return;
+  }
+  el.innerHTML = all.map(function(row){
+    return '<div class="kb-row'+(row.pinned?' pinned':'')+'" onclick="openRowModal(\''+xe(row.id)+'\')">' +
+      '<div class="kb-row-head">'+xe(row.head)+(row.pinned?'<span class="kb-row-pin">pinned</span>':'')+
+      (row.id==='sys_prompt'?'<span class="kb-row-pin" style="background:rgba(52,199,89,.12);color:#34C759">AI role</span>':'')+
+      (row.id==='context'?'<span class="kb-row-pin" style="background:rgba(255,149,0,.12);color:#FF9500">context</span>':'')+'</div>'+
+      '<div class="kb-row-exp">'+xe(row.explanation)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ── Row modal ───────────────────────────────────────────── */
+function openRowModal(id){
+  editingRowId = id || null;
+  var modal = document.getElementById('row-modal');
+  var delBtn = document.getElementById('row-del-btn');
+  document.getElementById('row-modal-title').textContent = id ? 'Edit Row' : 'Add to Workstyle KB';
+  if(id){
+    var row = kbRows.find(function(r){ return r.id===id; });
+    if(!row) return;
+    document.getElementById('row-head').value = row.head;
+    document.getElementById('row-exp').value  = row.explanation;
+    /* Don't allow deleting pinned system rows */
+    delBtn.style.display = row.pinned ? 'none' : 'block';
+  } else {
+    document.getElementById('row-head').value = '';
+    document.getElementById('row-exp').value  = '';
+    delBtn.style.display = 'none';
+  }
+  modal.classList.remove('hidden');
+  setTimeout(function(){ document.getElementById('row-head').focus(); },200);
+}
+
+function closeRowModal(){
+  document.getElementById('row-modal').classList.add('hidden');
+  editingRowId = null;
+}
+
+async function saveRow(){
+  var head = document.getElementById('row-head').value.trim();
+  var exp  = document.getElementById('row-exp').value.trim();
+  if(!head || !exp){ alert('Both fields required.'); return; }
+
+  if(editingRowId){
+    var idx = kbRows.findIndex(function(r){ return r.id===editingRowId; });
+    if(idx>-1){ kbRows[idx].head = head; kbRows[idx].explanation = exp; }
+  } else {
+    kbRows.push({id:uid(), head:head, explanation:exp, pinned:false});
+  }
+  scheduleSave();
+  renderKB();
+  closeRowModal();
+}
+
+async function deleteRow(){
+  if(!editingRowId) return;
+  if(!confirm('Delete this row?')) return;
+  kbRows = kbRows.filter(function(r){ return r.id!==editingRowId; });
+  scheduleSave();
+  renderKB();
+  closeRowModal();
+}
+
+/* ── Settings modal ──────────────────────────────────────── */
+function openSettings(){
+  document.getElementById('model-input').value = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+function closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
+function saveSettings(){
+  var model = document.getElementById('model-input').value.trim() || 'gemini-2.5-flash';
+  localStorage.setItem('chain_ai_model', model);
+  closeSettings();
+}
+
+/* ── Load task data ──────────────────────────────────────── */
+async function injectTasks(){
+  var btn = document.querySelector('.chat-tool-btn.accent');
+  btn.textContent='Loading…';btn.disabled=true;
+  try{
+    var r = await db.from('chain_state').select('data').eq('id','main').maybeSingle();
+    if(r.data && r.data.data) taskData = r.data.data;
+    if(!taskData){ taskData={tasks:[],projects:[]}; }
+  }catch(e){ console.error(e); }
+  btn.innerHTML='<i class="ti ti-list-check"></i> Tasks Loaded ✓';
+  btn.disabled=false;
+  btn.style.background='rgba(52,199,89,.1)';btn.style.color='#34C759';btn.style.borderColor='rgba(52,199,89,.35)';
+
+  /* Inject a system message showing task summary */
+  var summary = buildTaskSummary();
+  appendMsg('ai','📋 Tasks loaded! Here\'s what I see:\n\n'+summary+'\n\nWhat do you want to work on first?');
+}
+
+function buildTaskSummary(){
+  if(!taskData||!taskData.tasks||!taskData.tasks.length) return 'No tasks found.';
+  var active  = taskData.tasks.filter(function(t){return!t.done;});
+  var done    = taskData.tasks.filter(function(t){return t.done;});
+  var allTags = taskData.tags||[];
+  var lines   = ['Active tasks: '+active.length+' | Done: '+done.length];
+
+  function tagNames(ids){
+    return (ids||[]).map(function(id){
+      var tg=allTags.find(function(x){return x.id===id;}); return tg?tg.name:'?';
+    }).join(', ');
+  }
+
+  var projects = (taskData.projects||[]);
+  projects.forEach(function(p){
+    var pt = active.filter(function(t){return t.projectId===p.id;});
+    if(pt.length){
+      var ptags=tagNames(p.tags);
+      lines.push('\n📁 '+p.name+(ptags?' ['+ptags+']':'')+' ('+pt.length+' active):');
+      pt.forEach(function(t){
+        var stepsDone=(t.steps||[]).filter(function(s){return s.done;}).length;
+        var stepsTotal=(t.steps||[]).length;
+        var ttags=tagNames(t.tags);
+        var assignee=t.assignee?' → '+t.assignee:'';
+        lines.push('  • '+t.title+(ttags?' ['+ttags+']':'')+(stepsTotal?' ['+stepsDone+'/'+stepsTotal+' steps]':'')+assignee);
+        (t.steps||[]).forEach(function(s){
+          if(s.delegated&&s.delegatedTo){
+            lines.push('    ↳ delegated to '+s.delegatedTo+': '+s.text+(tagNames(s.tags)?' ['+tagNames(s.tags)+']':'')+(s.done?' ✓':''));
+          }
+        });
+      });
+    }
+  });
+  var standalone=active.filter(function(t){return!t.projectId;});
+  if(standalone.length){
+    lines.push('\n📌 No project:');
+    standalone.forEach(function(t){
+      var ttags=tagNames(t.tags);
+      lines.push('  • '+t.title+(ttags?' ['+ttags+']':'')+(t.assignee?' → '+t.assignee:''));
+      (t.steps||[]).forEach(function(s){
+        if(s.delegated&&s.delegatedTo) lines.push('    ↳ delegated to '+s.delegatedTo+': '+s.text+(s.done?' ✓':''));
+      });
+    });
+  }
+
+  /* Delegation summary */
+  var delegMap={};
+  taskData.tasks.forEach(function(t){
+    if(t.assignee&&t.assignee.trim()){
+      var n=t.assignee.trim(); if(!delegMap[n]) delegMap[n]=[];
+      delegMap[n].push('Task: '+t.title+(t.done?' [done]':''));
+    }
+    (t.steps||[]).forEach(function(s){
+      if(s.delegated&&s.delegatedTo&&s.delegatedTo.trim()){
+        var n2=s.delegatedTo.trim(); if(!delegMap[n2]) delegMap[n2]=[];
+        delegMap[n2].push('Step in "'+t.title+'": '+s.text+(s.done?' [done]':''));
+      }
+    });
+  });
+  var dnames=Object.keys(delegMap);
+  if(dnames.length){
+    lines.push('\n👥 Delegations:');
+    dnames.forEach(function(n){
+      lines.push('  '+n+':');
+      delegMap[n].forEach(function(x){ lines.push('    • '+x); });
+    });
+  }
+
+  /* Tags usage */
+  if(allTags.length){
+    var tagLines=[];
+    allTags.forEach(function(tag){
+      var cnt=taskData.tasks.filter(function(t){return(t.tags||[]).indexOf(tag.id)>-1;}).length;
+      if(cnt) tagLines.push(tag.name+': '+cnt);
+    });
+    if(tagLines.length) lines.push('\n🏷 Tag usage: '+tagLines.join(' | '));
+  }
+
+  return lines.join('\n');
+}
+
+/* ── Chat ────────────────────────────────────────────────── */
+function appendMsg(role, content){
+  var wrap = document.createElement('div');
+  wrap.className = 'msg-wrap '+role;
+  var t = ts();
+  if(role==='ai') wrap.innerHTML='<div class="msg-ai-label">Chain AI</div>';
+  wrap.innerHTML += '<div class="msg-bubble">'+xe(content).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="msg-time">'+t+'</div>';
+  document.getElementById('chat-msgs').appendChild(wrap);
+  chatLog.push({role:role,content:content,time:t});
+  document.getElementById('chat-msgs').scrollTop = 999999;
+}
+
+function showTyping(){
+  var el = document.createElement('div');
+  el.className='msg-wrap ai';el.id='typing-wrap';
+  el.innerHTML='<div class="msg-ai-label">Chain AI</div>'+
+    '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  document.getElementById('chat-msgs').appendChild(el);
+  document.getElementById('chat-msgs').scrollTop=999999;
+}
+function hideTyping(){ var el=document.getElementById('typing-wrap');if(el)el.remove(); }
+
+async function sendMsg(){
+  var input = document.getElementById('chat-input');
+  var txt   = input.value.trim();
+  if(!txt) return;
+
+  input.value=''; input.style.height='auto';
+  document.getElementById('send-btn').disabled=true;
+  appendMsg('user',txt);
+  showTyping();
+
+  try{
+    var reply = await callGemini(txt);
+    hideTyping();
+    appendMsg('ai',reply);
+  }catch(e){
+    hideTyping();
+    appendMsg('ai','⚠️ Error: '+e.message);
+  }
+  document.getElementById('send-btn').disabled=false;
+}
+
+function clearChat(){
+  chatLog=[];taskData=null;
+  var msgsEl = document.getElementById('chat-msgs');
+  msgsEl.innerHTML='<div class="msg-wrap ai"><div class="msg-ai-label">Chain AI</div>'+
+    '<div class="msg-bubble">Chat cleared. Tap Load Tasks to start fresh. 🚀</div>'+
+    '<div class="msg-time">'+ts()+'</div></div>';
+  var btn = document.querySelector('.chat-tool-btn.accent');
+  btn.innerHTML='<i class="ti ti-list-check"></i> Load Tasks';
+  btn.style.cssText='';
+}
+
+/* ── Gemini API call via Cloudflare Worker ───────────────── */
+var WORKER_URL = 'https://chain.smworkassistance.workers.dev/';
+
+async function callGemini(userMessage){
+  var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
+
+  /* Build system instruction from KB rows */
+  var sysRow = kbRows.find(function(r){ return r.id==='sys_prompt'; });
+  var sysText = sysRow ? sysRow.explanation : 'You are a focused work assistant.';
+
+  /* Append all other KB rows as workstyle context */
+  var philRows = kbRows.filter(function(r){ return r.id!=='sys_prompt'; });
+  if(philRows.length){
+    sysText += '\n\n## My Workstyle Knowledge Base\n';
+    philRows.forEach(function(r){
+      sysText += '\n### '+r.head+'\n'+r.explanation;
+    });
+  }
+
+  /* Append action log context (compressed history) */
+  var logCtx = buildLogContext();
+  if(logCtx) sysText += '\n\n## Action History (compressed)\n'+logCtx;
+
+  /* Append task data if loaded */
+  if(taskData && taskData.tasks && taskData.tasks.length){
+    sysText += '\n\n## Current Task Data\n'+buildTaskSummary();
+  }
+
+  /* Build conversation history (last 20 turns) */
+  var history = chatLog.slice(-20);
+  var contents = history.map(function(m){
+    return {role: m.role==='ai'?'model':'user', parts:[{text:m.content}]};
+  });
+  contents.push({role:'user', parts:[{text:userMessage}]});
+
+  var body = {
+    _model: model,
+    system_instruction:{ parts:[{text:sysText}] },
+    contents: contents,
+    generationConfig:{ maxOutputTokens:1024, temperature:0.7 }
+  };
+
+  var res = await fetch(WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+
+  if(!res.ok){
+    var err = await res.json().catch(function(){return{};});
+    throw new Error((err.error&&err.error.message)||'API error '+res.status);
+  }
+
+  var data = await res.json();
+  var text = data.candidates&&data.candidates[0]&&
+             data.candidates[0].content&&data.candidates[0].content.parts&&
+             data.candidates[0].content.parts[0]&&
+             data.candidates[0].content.parts[0].text;
+  return text || 'No response from model.';
+}
+
+/* ── Raw Gemini call (no KB/task context, used for summarise) */
+async function callGeminiRaw(prompt){
+  var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
+  var body = {
+    _model: model,
+    system_instruction:{parts:[{text:'You are a concise summariser. Output only the summary, no preamble.'}]},
+    contents:[{role:'user',parts:[{text:prompt}]}],
+    generationConfig:{maxOutputTokens:256, temperature:0.3}
+  };
+  var res = await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok) throw new Error('API '+res.status);
+  var data = await res.json();
+  return (data.candidates&&data.candidates[0]&&data.candidates[0].content&&
+          data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&
+          data.candidates[0].content.parts[0].text)||'';
+}
+
+/* ── Build compressed log context for system prompt ──────── */
+function buildLogContext(){
+  var parts = [];
+  if(logData.monthly && logData.monthly.length){
+    logData.monthly.slice(-3).forEach(function(m){ parts.push('['+m.month+'] '+m.summary); });
+  }
+  if(logData.weekly && logData.weekly.length){
+    logData.weekly.slice(-2).forEach(function(w){ parts.push('['+w.week+'] '+w.summary); });
+  }
+  if(logData.daily && logData.daily.length){
+    logData.daily.slice(-3).forEach(function(d){ parts.push('['+d.date+'] '+d.summary); });
+  }
+  if(logData.raw && logData.raw.length){
+    logData.raw.slice(0,10).forEach(function(e){ parts.push('[today] '+e.text); });
+  }
+  return parts.join('\n');
+}
+
+/* ── Sidebar tabs (KB vs Log) ────────────────────────────── */
+/* ── Drawer functions ────────────────────────────────────── */
+function openDrawer(){
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+}
+
+function sbTab(tab){
+  document.getElementById('sb-kb').style.display  = tab==='kb'  ? 'flex' : 'none';
+  document.getElementById('sb-log').style.display = tab==='log' ? 'flex' : 'none';
+  document.querySelectorAll('.sb-tab').forEach(function(b,i){
+    b.classList.toggle('active',(i===0&&tab==='kb')||(i===1&&tab==='log'));
+  });
+}
+
+/* ── Click-outside to close modals ──────────────────────── */
+document.getElementById('row-modal').addEventListener('click',function(e){
+  if(e.target===this) closeRowModal();
+});
+document.getElementById('settings-modal').addEventListener('click',function(e){
+  if(e.target===this) closeSettings();
+});
+
+/* ── Boot ────────────────────────────────────────────────── */
+async function boot(){
+  /* Load unified AI data (KB rows + log) */
+  await loadAI();
+  renderKB();
+  renderLog();
+
+  /* Auto-summarise any previous-day raw entries (background, non-blocking) */
+  autoSummarise().catch(function(e){ console.error('autoSummarise',e); });
+
+  /* Load tasks from chain_state */
+  try{
+    var r = await db.from('chain_state').select('data').eq('id','main').maybeSingle();
+    if(r.data && r.data.data) taskData = r.data.data;
+    if(!taskData){ taskData={tasks:[],projects:[]}; }
+  }catch(e){ taskData={tasks:[],projects:[]}; console.error('load tasks',e); }
+
+  var msgsEl = document.getElementById('chat-msgs');
+  msgsEl.innerHTML='<div class="msg-wrap ai"><div class="msg-ai-label">Chain AI</div>'+
+    '<div class="msg-bubble">Ready! I have your tasks loaded — '+
+    (taskData.tasks?taskData.tasks.filter(function(t){return!t.done;}).length:0)+
+    ' active tasks across '+
+    (taskData.projects?taskData.projects.length:0)+
+    ' projects. Ask me anything. 🚀</div>'+
+    '<div class="msg-time">'+ts()+'</div></div>';
+}
+boot();
+</script>
+
+<nav id="bottom-nav">
+  <a href="chain.html" class="bn-item"><i class="ti ti-home"></i><span>Chain</span></a>
+  <a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
+  <a href="mindmapv15.html" class="bn-item"><i class="ti ti-360-view"></i><span>3D Map</span></a>
+  <a href="calendar.html" class="bn-item"><i class="ti ti-calendar"></i><span>Calendar</span></a>
+  <a href="mindmapv21.html" class="bn-item active"><i class="ti ti-sparkles"></i><span>AI</span></a>
+</nav>
+</body>
+</html>
