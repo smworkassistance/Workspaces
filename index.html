@@ -290,6 +290,103 @@ body{
 }
 .focus-rm:active{background:rgba(255,59,48,.1);color:#FF3B30}
 
+/* ── Alive focus rows ───────────────────────────────────── */
+.focus-row-wrap{display:flex;align-items:stretch;border-bottom:.5px solid var(--border)}
+.focus-ctrl{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:30px;background:var(--bg);flex-shrink:0;border-right:.5px solid var(--border)}
+.focus-num{font-size:9px;font-weight:800;color:var(--accent);line-height:1;margin:1px 0}
+.focus-arrow{border:none;background:none;padding:3px 5px;color:var(--muted);cursor:pointer;
+  font-size:14px;touch-action:manipulation;border-radius:3px;line-height:1;
+  -webkit-tap-highlight-color:transparent}
+.focus-arrow:active{background:rgba(60,60,67,.1);color:var(--text)}
+.focus-arrow:disabled{opacity:.2;cursor:default}
+.focus-main{flex:1;min-width:0}
+.focus-main .sw-wrap{border-bottom:none}
+.focus-proj-row{display:flex;align-items:center;gap:8px;padding:10px 10px;cursor:pointer;
+  background:var(--surface);touch-action:manipulation}
+.focus-proj-row:active{background:var(--bg)}
+.focus-step-row{display:flex;align-items:center;gap:8px;padding:10px 10px;cursor:pointer;
+  background:var(--surface);touch-action:manipulation}
+.focus-step-row:active{background:var(--bg)}
+.focus-step-name{font-size:14px;font-weight:600;flex:1;color:var(--text)}
+.focus-step-parent{font-size:11px;color:var(--muted)}
+.focus-deleted{padding:10px 14px;font-size:12px;color:var(--muted);font-style:italic}
+
+/* ── Tag chips on task rows ─────────────────────────────── */
+.task-tag{display:inline-flex;align-items:center;font-size:9px;font-weight:800;
+  letter-spacing:.04em;border-radius:4px;padding:1px 5px;margin-left:3px;
+  vertical-align:middle}
+
+/* ── Tags view ──────────────────────────────────────────── */
+.tags-hdr{display:flex;align-items:center;padding:10px 14px 6px;flex-shrink:0}
+.tags-hdr-lbl{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);flex:1}
+.tags-manage-btn{background:none;border:none;color:var(--accent);font-size:22px;
+  cursor:pointer;padding:2px;touch-action:manipulation;border-radius:6px;line-height:1}
+.tags-grid{display:flex;flex-wrap:wrap;gap:7px;padding:4px 14px 12px}
+.tag-card{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:14px;
+  border:1.5px solid var(--tc,#ccc);background:transparent;cursor:pointer;
+  font-size:12px;font-weight:700;color:var(--tc,#666);touch-action:manipulation;
+  font-family:var(--font);-webkit-tap-highlight-color:transparent;transition:all .15s}
+.tag-card:active,.tag-card.active{background:var(--tc,#ccc);color:#fff}
+.tag-card .tc-dot{width:7px;height:7px;border-radius:50%;background:var(--tc,#ccc);flex-shrink:0}
+.tag-card.active .tc-dot{background:#fff}
+.tag-card .tc-count{font-size:9px;opacity:.75;margin-left:1px}
+.tags-filtered-hdr{padding:6px 14px 4px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  border-top:.5px solid var(--border)}
+
+/* ── People / Delegation view ───────────────────────────── */
+.person-group{margin-bottom:1px}
+.person-group-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg)}
+.person-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);
+  color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.person-name{font-size:15px;font-weight:700;flex:1;color:var(--text)}
+.person-count{font-size:11px;font-weight:700;color:var(--muted);
+  background:rgba(60,60,67,.1);border-radius:10px;padding:1px 8px}
+.person-item{display:flex;align-items:center;gap:8px;padding:10px 14px;
+  border-bottom:.5px solid var(--border);background:var(--surface);
+  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.person-item:active{background:var(--bg)}
+.pi-badge{font-size:9px;font-weight:800;letter-spacing:.06em;border-radius:4px;
+  padding:1px 5px;flex-shrink:0;text-transform:uppercase}
+.pi-task{background:rgba(0,122,255,.1);color:#007AFF}
+.pi-step{background:rgba(52,199,89,.1);color:#34C759}
+.pi-main{flex:1;min-width:0}
+.pi-name{font-size:14px;font-weight:600;color:var(--text);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pi-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.pi-status{font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0}
+.pi-done{color:var(--green)}
+
+/* ── Tag modal ──────────────────────────────────────────── */
+#tag-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:none;align-items:flex-end;justify-content:center;z-index:200}
+#tag-modal-overlay.open{display:flex}
+#tag-modal{background:var(--surface);width:100%;max-width:480px;
+  border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));
+  max-height:80vh;overflow-y:auto}
+#tag-modal h3{font-size:17px;font-weight:700;margin-bottom:14px}
+.tag-list-row{display:flex;align-items:center;gap:8px;padding:8px 0;
+  border-bottom:.5px solid var(--border)}
+.tag-list-row:last-child{border-bottom:none}
+.tag-list-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.tag-list-name{flex:1;font-size:14px;font-weight:600;color:var(--text)}
+.tag-del-btn{background:none;border:none;color:rgba(60,60,67,.3);cursor:pointer;
+  font-size:18px;padding:2px 4px;border-radius:4px;touch-action:manipulation}
+.tag-del-btn:active{color:#FF3B30}
+.color-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;touch-action:manipulation;flex-shrink:0;transition:transform .1s}
+.color-swatch.selected{border-color:var(--text);transform:scale(1.15)}
+
+/* ── Tag picker in task modal ───────────────────────────── */
+.tag-sel-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;
+  border-radius:12px;border:1.5px solid var(--tc,#ccc);background:transparent;
+  color:var(--tc,#666);font-size:12px;font-weight:700;cursor:pointer;
+  font-family:var(--font);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tag-sel-chip.selected{background:var(--tc,#ccc);color:#fff}
+
 /* ── Pin button ─────────────────────────────────────────── */
 .tr-pin{
   background:none;border:none;cursor:pointer;
@@ -916,8 +1013,10 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
         <input id="search-input" type="search" placeholder="Search tasks…" oninput="searchTasks()" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
       <div id="focus-seg">
-        <button class="seg-btn active" id="seg-all"   onclick="setFocusMode(false)">All Tasks</button>
-        <button class="seg-btn"        id="seg-focus" onclick="setFocusMode(true)"><i class="ti ti-pin"></i> Focus</button>
+        <button class="seg-btn active" id="seg-all"    onclick="setMode('all')">All</button>
+        <button class="seg-btn"        id="seg-focus"  onclick="setMode('focus')"><i class="ti ti-pin"></i></button>
+        <button class="seg-btn"        id="seg-tags"   onclick="setMode('tags')"><i class="ti ti-tag"></i></button>
+        <button class="seg-btn"        id="seg-people" onclick="setMode('people')"><i class="ti ti-users"></i></button>
       </div>
       <div id="task-list"></div>
     </aside>
@@ -962,9 +1061,29 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
     <input id="modal-assignee" type="text" placeholder="Optional..." autocomplete="off">
     <label>Due date</label>
     <input id="modal-due" type="date">
+    <label>Tags</label>
+    <div id="modal-tags-picker" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
       <button id="modal-save" class="btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tag management modal -->
+<div id="tag-modal-overlay" onclick="closeTagModal()">
+  <div id="tag-modal" onclick="event.stopPropagation()">
+    <h3>Manage Tags</h3>
+    <div id="tag-list-body"></div>
+    <div style="margin-top:10px;border-top:.5px solid var(--border);padding-top:10px">
+      <label>New tag name</label>
+      <input id="tag-name-inp" type="text" placeholder="Tag name…" autocomplete="off">
+      <label style="margin-top:6px">Color</label>
+      <div id="tag-color-swatches" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+      <div class="modal-footer" style="margin-top:10px">
+        <button class="btn-cancel" onclick="closeTagModal()">Close</button>
+        <button class="btn-primary" onclick="addTagFromModal()">Add Tag</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1058,6 +1177,8 @@ function ensureDefaults() {
   if (!D.log)      D.log      = [];
   if (!D.projects) D.projects = [];
   if (!D.focus)    D.focus    = [];
+  if (!D.tags)     D.tags     = DEFAULT_TAGS.map(function(t){return{id:t.id,name:t.name,color:t.color};});
+  D.tasks.forEach(function(t){ if (!t.tags) t.tags=[]; });
 }
 
 async function ld() {
@@ -1286,16 +1407,32 @@ function editStepSwipe(sid) {
 }
 
 /* ── Focus list ─────────────────────────────────────────── */
-var focusMode = false;
+/* ── Mode: all / focus / tags / people ──────────────────── */
+var currentMode = 'all';
+var activeTagId  = null;
+var editingTags  = []; // temp tags during modal edit
+var newTagColor  = '#007AFF';
 
-function setFocusMode(on) {
-  focusMode = on;
-  document.getElementById('seg-all').classList.toggle('active', !on);
-  document.getElementById('seg-focus').classList.toggle('active', on);
-  document.getElementById('search-bar').style.display = on ? 'none' : '';
+var DEFAULT_TAGS = [
+  {id:'meeting',  name:'Meeting',   color:'#007AFF'},
+  {id:'followup', name:'Follow-up', color:'#FF9500'},
+  {id:'deepwork', name:'Deep Work', color:'#5856D6'},
+  {id:'recurring',name:'Recurring', color:'#34C759'},
+  {id:'onetime',  name:'One-time',  color:'#FF3B30'},
+  {id:'research', name:'Research',  color:'#FF2D55'},
+];
+
+function setMode(m) {
+  currentMode = m;
+  if (m !== 'tags') activeTagId = null;
+  ['all','focus','tags','people'].forEach(function(k){
+    document.getElementById('seg-'+k).classList.toggle('active', k===m);
+  });
+  document.getElementById('search-bar').style.display = m==='all' ? '' : 'none';
   renderList();
 }
 
+/* ── Focus helpers ──────────────────────────────────────── */
 function isFocused(type, id) {
   return !!(D.focus||[]).find(function(f){
     return f.type===type && (
@@ -1324,82 +1461,235 @@ function toggleFocus(type, refId, parentTaskId) {
     if (type==='step')  { item.stepId = refId; item.taskId = parentTaskId; }
     D.focus.push(item);
   }
-  sv();
-  renderList();
-  if (aid) renderDetail();
+  sv(); renderList(); if(aid) renderDetail();
 }
 
 function moveFocus(fid, dir) {
-  var arr = D.focus||[]; var i = arr.findIndex(function(f){ return f.fid===fid; });
-  if (i<0) return;
-  var j = i+dir; if (j<0||j>=arr.length) return;
+  var arr=D.focus||[]; var i=arr.findIndex(function(f){return f.fid===fid;});
+  if(i<0) return;
+  var j=i+dir; if(j<0||j>=arr.length) return;
   var tmp=arr[i]; arr[i]=arr[j]; arr[j]=tmp;
   sv(); renderList();
 }
 
-function removeFromFocus(fid) {
-  D.focus = (D.focus||[]).filter(function(f){ return f.fid!==fid; });
-  sv(); renderList();
+function toggleStepInFocus(taskId, stepId) {
+  aid = taskId; toggleStep(stepId); renderList();
 }
 
-function focusClick(fid) {
-  var f = (D.focus||[]).find(function(x){ return x.fid===fid; }); if (!f) return;
-  if ((f.type==='task'||f.type==='step') && f.taskId) sel(f.taskId);
-  else if (f.type==='project' && f.projId) {
-    /* navigate to project detail (same as clicking a project header) */
-    viewProjId = f.projId; aid = null; if(isMob()) showDetail(); renderDetail();
-  }
-}
-
-function focusName(f) {
-  if (f.type==='task')    { var t=gt(f.taskId); return t?t.title:f.name||'(deleted)'; }
-  if (f.type==='project') { var p=gp(f.projId); return p?p.name:f.name||'(deleted)'; }
-  if (f.type==='step')    {
-    var t2=gt(f.taskId);
-    if (t2){ var s=t2.steps.find(function(x){return x.id===f.stepId;}); if(s) return s.text; }
-    return f.name||'(deleted)';
-  }
-  return f.name||'?';
-}
-
-function focusSub(f) {
-  if (f.type==='task') {
-    var t=gt(f.taskId); if(t&&t.projectId){ var p=gp(t.projectId); if(p) return p.name; }
-  }
-  if (f.type==='step') {
-    var t2=gt(f.taskId); if(t2) return t2.title;
-  }
-  return '';
-}
-
+/* ── Alive focus list ───────────────────────────────────── */
 function renderFocusList(el) {
   if (!D.focus) D.focus = [];
-  var fc = D.focus;
+  var fc = D.focus.filter(function(f){
+    if (f.type==='task')    return !!gt(f.taskId);
+    if (f.type==='project') return !!gp(f.projId);
+    if (f.type==='step')    { var t=gt(f.taskId); return t&&!!t.steps.find(function(s){return s.id===f.stepId;}); }
+    return false;
+  });
   if (!fc.length) {
-    el.innerHTML = '<div class="empty-st"><i class="ti ti-pin"></i><p>Focus list is empty.<br>Tap 📌 on any task, project,<br>or step to add it here.</p></div>';
+    el.innerHTML='<div class="empty-st"><i class="ti ti-pin"></i><p>Focus list is empty.<br>Tap 📌 on any task, project<br>or step to add it here.</p></div>';
     return;
   }
   el.innerHTML = fc.map(function(f, idx) {
-    var name = focusName(f);
-    var sub  = focusSub(f);
-    var done = false;
-    if (f.type==='task'){ var t=gt(f.taskId); done=t&&t.done; }
-    return '<div class="focus-item'+(done?' focus-done':'')+'">'+
-      '<div class="focus-move">'+
-        '<button class="focus-arrow" onclick="moveFocus(\''+f.fid+'\',-1)"'+(idx===0?' disabled':'')+'>'+
-          '<i class="ti ti-chevron-up"></i></button>'+
-        '<button class="focus-arrow" onclick="moveFocus(\''+f.fid+'\',1)"'+(idx===fc.length-1?' disabled':'')+'>'+
-          '<i class="ti ti-chevron-down"></i></button>'+
+    var ctrl = '<div class="focus-ctrl">'+
+      '<button class="focus-arrow" onclick="moveFocus(\''+f.fid+'\',-1)"'+(idx===0?' disabled':'')+'>'+
+        '<i class="ti ti-chevron-up"></i></button>'+
+      '<span class="focus-num">'+(idx+1)+'</span>'+
+      '<button class="focus-arrow" onclick="moveFocus(\''+f.fid+'\',1)"'+(idx===fc.length-1?' disabled':'')+'>'+
+        '<i class="ti ti-chevron-down"></i></button>'+
+    '</div>';
+
+    if (f.type==='task') {
+      var t = gt(f.taskId);
+      return '<div class="focus-row-wrap">'+ctrl+'<div class="focus-main">'+taskRowHtml(t)+'</div></div>';
+    }
+    if (f.type==='project') {
+      var p = gp(f.projId);
+      var ac = D.tasks.filter(function(t){return t.projectId===f.projId&&!t.done;}).length;
+      var pinned = isFocused('project', f.projId);
+      return '<div class="focus-row-wrap">'+ctrl+
+        '<div class="focus-main">'+
+          '<div class="focus-proj-row" onclick="viewProjId=\''+f.projId+'\';aid=null;renderDetail()">'+
+            '<span class="proj-group-dot" style="background:'+p.color+'"></span>'+
+            '<span class="proj-group-name" style="color:'+p.color+';font-size:14px;font-weight:700;flex:1">'+xe(p.name)+'</span>'+
+            '<span style="font-size:11px;color:var(--muted)">'+ac+' active</span>'+
+            '<button class="tr-pin'+(pinned?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'project\',\''+f.projId+'\')"><i class="ti ti-pin"></i></button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }
+    if (f.type==='step') {
+      var pt = gt(f.taskId);
+      var s  = pt.steps.find(function(x){return x.id===f.stepId;});
+      var chkCls = 'step-check'+(s.done?' checked':'');
+      var pinned2 = isFocused('step', f.stepId);
+      return '<div class="focus-row-wrap">'+ctrl+
+        '<div class="focus-main">'+
+          '<div class="focus-step-row" onclick="sel(\''+pt.id+'\')">'+
+            '<div class="'+chkCls+'" onclick="event.stopPropagation();toggleStepInFocus(\''+pt.id+'\',\''+s.id+'\')">'+
+              (s.done?'<i class="ti ti-check"></i>':'')+
+            '</div>'+
+            '<div style="flex:1;min-width:0">'+
+              '<div class="focus-step-name'+(s.done?' tr-done':'')+'">'+xe(s.text)+'</div>'+
+              '<div class="focus-step-parent">'+xe(pt.title)+'</div>'+
+            '</div>'+
+            '<button class="tr-pin'+(pinned2?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'step\',\''+s.id+'\',\''+pt.id+'\')"><i class="ti ti-pin"></i></button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }
+  }).join('');
+}
+
+/* ── Tags view ──────────────────────────────────────────── */
+function selectTag(id) {
+  activeTagId = activeTagId===id ? null : id;
+  renderList();
+}
+
+function renderTagsView(el) {
+  var tags = D.tags||[];
+  var html = '<div class="tags-hdr">'+
+    '<span class="tags-hdr-lbl">Tags</span>'+
+    '<button class="tags-manage-btn" onclick="openTagModal()" title="Manage tags"><i class="ti ti-settings"></i></button>'+
+  '</div>'+
+  '<div class="tags-grid">'+
+    tags.map(function(tag){
+      var count = D.tasks.filter(function(t){return(t.tags||[]).indexOf(tag.id)>-1;}).length;
+      var isA = activeTagId===tag.id;
+      return '<button class="tag-card'+(isA?' active':'')+'" style="--tc:'+tag.color+'" onclick="selectTag(\''+tag.id+'\')">'+
+        '<span class="tc-dot"></span>'+xe(tag.name)+'<span class="tc-count">'+count+'</span>'+
+      '</button>';
+    }).join('')+
+    (tags.length===0?'<div style="color:var(--muted);font-size:13px;padding:8px 0">No tags yet. Click ⚙ to add some.</div>':'')+
+  '</div>';
+
+  if (activeTagId) {
+    var tag = tags.find(function(t){return t.id===activeTagId;});
+    var tagged = D.tasks.filter(function(t){return(t.tags||[]).indexOf(activeTagId)>-1;});
+    html += '<div class="tags-filtered-hdr">'+(tag?xe(tag.name):'?')+' · '+tagged.length+' task'+(tagged.length!==1?'s':'')+'</div>';
+    html += tagged.length
+      ? tagged.map(taskRowHtml).join('')
+      : '<div class="empty-st"><i class="ti ti-tag-off"></i><p>No tasks with this tag.<br>Edit a task to add tags.</p></div>';
+  }
+  el.innerHTML = html;
+}
+
+/* ── People / Delegation view ───────────────────────────── */
+function renderPeopleView(el) {
+  var people = {};
+  D.tasks.forEach(function(t){
+    if (t.assignee && t.assignee.trim()) {
+      var n = t.assignee.trim();
+      if (!people[n]) people[n]={tasks:[],steps:[]};
+      people[n].tasks.push(t);
+    }
+    (t.steps||[]).forEach(function(s){
+      if (s.delegated && s.delegatedTo && s.delegatedTo.trim()) {
+        var n2 = s.delegatedTo.trim();
+        if (!people[n2]) people[n2]={tasks:[],steps:[]};
+        people[n2].steps.push({step:s,task:t});
+      }
+    });
+  });
+  var names = Object.keys(people).sort();
+  if (!names.length) {
+    el.innerHTML='<div class="empty-st"><i class="ti ti-users"></i><p>No delegations yet.<br>Assign tasks or delegate steps<br>to people to see them here.</p></div>';
+    return;
+  }
+  el.innerHTML = names.map(function(name){
+    var p = people[name];
+    var rows = p.tasks.map(function(t){
+      return '<div class="person-item" onclick="sel(\''+t.id+'\')">'+
+        '<span class="pi-badge pi-task">task</span>'+
+        '<div class="pi-main">'+
+          '<div class="pi-name">'+xe(t.title)+'</div>'+
+          (t.projectId?'<div class="pi-sub">'+xe((gp(t.projectId)||{}).name||'')+'</div>':'')+
+        '</div>'+
+        '<span class="pi-status'+(t.done?' pi-done':'')+'">'+( t.done?'Done':'Active')+'</span>'+
+      '</div>';
+    }).join('')+
+    p.steps.map(function(ds){
+      return '<div class="person-item" onclick="sel(\''+ds.task.id+'\')">'+
+        '<span class="pi-badge pi-step">step</span>'+
+        '<div class="pi-main">'+
+          '<div class="pi-name">'+xe(ds.step.text)+'</div>'+
+          '<div class="pi-sub">in: '+xe(ds.task.title)+'</div>'+
+        '</div>'+
+        '<span class="pi-status'+(ds.step.done?' pi-done':'')+'">'+( ds.step.done?'Done':'Active')+'</span>'+
+      '</div>';
+    }).join('');
+    return '<div class="person-group">'+
+      '<div class="person-group-hdr">'+
+        '<div class="person-avatar">'+xe(name.charAt(0).toUpperCase())+'</div>'+
+        '<span class="person-name">'+xe(name)+'</span>'+
+        '<span class="person-count">'+(p.tasks.length+p.steps.length)+'</span>'+
       '</div>'+
-      '<div class="focus-body" onclick="focusClick(\''+f.fid+'\')">'+
-        '<span class="focus-type-badge focus-type-'+f.type+'">'+f.type+'</span>'+
-        '<div class="focus-name">'+xe(name)+'</div>'+
-        (sub?'<div class="focus-sub">'+xe(sub)+'</div>':'')+
-      '</div>'+
-      '<button class="focus-rm" onclick="removeFromFocus(\''+f.fid+'\')" title="Remove from focus">'+
-        '<i class="ti ti-x"></i></button>'+
+      rows+
     '</div>';
   }).join('');
+}
+
+/* ── Tag management modal ───────────────────────────────── */
+var TAG_COLORS = ['#007AFF','#FF9500','#FF3B30','#34C759','#5856D6','#FF2D55','#AC8E68','#30B0C7'];
+
+function openTagModal() {
+  renderTagListBody();
+  renderColorSwatches();
+  document.getElementById('tag-name-inp').value='';
+  document.getElementById('tag-modal-overlay').classList.add('open');
+}
+function closeTagModal() { document.getElementById('tag-modal-overlay').classList.remove('open'); }
+
+function renderTagListBody() {
+  var tags = D.tags||[];
+  document.getElementById('tag-list-body').innerHTML = tags.length
+    ? tags.map(function(tag){
+        return '<div class="tag-list-row">'+
+          '<div class="tag-list-dot" style="background:'+tag.color+'"></div>'+
+          '<span class="tag-list-name">'+xe(tag.name)+'</span>'+
+          '<button class="tag-del-btn" onclick="deleteTag(\''+tag.id+'\')"><i class="ti ti-x"></i></button>'+
+        '</div>';
+      }).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No tags yet.</div>';
+}
+
+function renderColorSwatches() {
+  document.getElementById('tag-color-swatches').innerHTML = TAG_COLORS.map(function(c){
+    return '<div class="color-swatch'+(newTagColor===c?' selected':'')+'" style="background:'+c+'" onclick="pickTagColor(\''+c+'\')"></div>';
+  }).join('');
+}
+
+function pickTagColor(c) { newTagColor=c; renderColorSwatches(); }
+
+function addTagFromModal() {
+  var name = document.getElementById('tag-name-inp').value.trim();
+  if (!name) return;
+  if (!D.tags) D.tags=[];
+  D.tags.push({id:uid(), name:name, color:newTagColor});
+  sv(); renderTagListBody(); renderList();
+  document.getElementById('tag-name-inp').value='';
+}
+
+function deleteTag(id) {
+  D.tags = (D.tags||[]).filter(function(t){return t.id!==id;});
+  D.tasks.forEach(function(t){ t.tags=(t.tags||[]).filter(function(x){return x!==id;}); });
+  if (activeTagId===id) activeTagId=null;
+  sv(); renderTagListBody(); renderList();
+}
+
+/* ── Tag picker in task modal ───────────────────────────── */
+function renderModalTagPicker() {
+  var tags = D.tags||[];
+  document.getElementById('modal-tags-picker').innerHTML = tags.map(function(tag){
+    var sel = editingTags.indexOf(tag.id)>-1;
+    return '<button class="tag-sel-chip'+(sel?' selected':'')+'" style="--tc:'+tag.color+'" onclick="toggleEditTag(\''+tag.id+'\')">'+xe(tag.name)+'</button>';
+  }).join('') || '<span style="font-size:12px;color:var(--muted)">No tags yet — manage in Tags tab</span>';
+}
+
+function toggleEditTag(id) {
+  var i = editingTags.indexOf(id);
+  if (i>-1) editingTags.splice(i,1); else editingTags.push(id);
+  renderModalTagPicker();
 }
 
 function render() {
@@ -1431,6 +1721,10 @@ function taskRowHtml(t) {
     var dueLabel = diff===0?'Due today':diff===1?'Due tomorrow':diff<0?Math.abs(diff)+'d overdue':'Due '+t.dueDate;
     meta += ' · 📅 '+dueLabel;
   }
+  var taskTags = (t.tags||[]).map(function(tid2){
+    var tg=(D.tags||[]).find(function(x){return x.id===tid2;});
+    return tg?'<span class="task-tag" style="background:'+tg.color+'22;color:'+tg.color+'">'+xe(tg.name)+'</span>':'';
+  }).join('');
   var cls = 'task-row'+(t.id===aid?' tr-active':'')+(t.done?' tr-done':'');
   var tid = xe(t.id);
   var pinned = isFocused('task', t.id);
@@ -1444,7 +1738,7 @@ function taskRowHtml(t) {
         '<div class="tr-dot" style="background:'+dot+'"></div>'+
         '<div class="tr-body">'+
           '<div class="tr-name" onclick="event.stopPropagation();this.classList.toggle(\'expanded\')">'+xe(t.title)+'</div>'+
-          '<div class="tr-meta">'+meta+'</div>'+
+          '<div class="tr-meta">'+meta+(taskTags?'<span style="margin-left:4px">'+taskTags+'</span>':'')+'</div>'+
         '</div>'+
         '<div class="tr-prog"><div class="tr-fill'+(t.done?' tr-fill-done':'')+'" style="width:'+p+'%"></div></div>'+
         '<button class="tr-check'+(t.done?' tr-checked':'')+'" onclick="event.stopPropagation();toggleDone(\''+t.id+'\')" title="'+(t.done?'Reopen':'Done')+'">'+(t.done?'<i class="ti ti-check"></i>':'')+'</button>'+
@@ -1457,7 +1751,9 @@ function taskRowHtml(t) {
 
 function renderList() {
   var el = document.getElementById('task-list');
-  if (focusMode) { renderFocusList(el); return; }
+  if (currentMode==='focus')  { renderFocusList(el); return; }
+  if (currentMode==='tags')   { renderTagsView(el); return; }
+  if (currentMode==='people') { renderPeopleView(el); return; }
   var q = searchQ.trim().toLowerCase();
   var tasks = q
     ? D.tasks.filter(function(t){ return t.title.toLowerCase().indexOf(q) !== -1; })
@@ -1900,25 +2196,28 @@ function openModal(id) {
     assEl.value=t?(t.assignee||''):'';
     projSel.value=t?(t.projectId||''):'';
     dueEl.value=t?(t.dueDate||''):'';
+    editingTags = (t&&t.tags)?t.tags.slice():[];
     saveBtn.onclick=saveEdit;
   } else {
     document.getElementById('modal-title').textContent='New task';
     nameEl.value='';assEl.value='';projSel.value='';dueEl.value='';
+    editingTags=[];
     saveBtn.onclick=saveNew;
   }
+  renderModalTagPicker();
   document.getElementById('modal-overlay').classList.add('open');
   setTimeout(function(){nameEl.focus();},80);
 }
 function closeModal(){
   document.getElementById('modal-overlay').classList.remove('open');
-  editId=null;
+  editId=null; editingTags=[];
 }
 function saveNew() {
   var name=document.getElementById('modal-name').value.trim(); if(!name) return;
   var ass=document.getElementById('modal-assignee').value.trim();
   var projId=document.getElementById('modal-project').value||null;
   var due=document.getElementById('modal-due').value||null;
-  var task={id:uid(),title:name,assignee:ass,projectId:projId,dueDate:due,done:false,notes:'',createdAt:new Date().toISOString(),steps:[]};
+  var task={id:uid(),title:name,assignee:ass,projectId:projId,dueDate:due,done:false,notes:'',createdAt:new Date().toISOString(),steps:[],tags:editingTags.slice()};
   D.tasks.unshift(task);aid=task.id;ctab='steps';
   lg('Task created: "'+name+'"');
   sv();closeModal();render();
@@ -1930,7 +2229,7 @@ function saveEdit() {
   var projId=document.getElementById('modal-project').value||null;
   var due=document.getElementById('modal-due').value||null;
   var t=gt(editId); if(!t) return;
-  var old=t.title;t.title=name;t.assignee=ass;t.projectId=projId;t.dueDate=due;
+  var old=t.title;t.title=name;t.assignee=ass;t.projectId=projId;t.dueDate=due;t.tags=editingTags.slice();
   lg('Task updated: "'+old+'" → "'+name+'"');
   sv();closeModal();render();
 }
