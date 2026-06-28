@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v14</title>
+<title>Chain v15</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -383,6 +383,64 @@ body{
 .proj-notes-section{padding:12px 14px;border-top:.5px solid var(--border)}
 .proj-notes-section label{font-size:11px;font-weight:700;text-transform:uppercase;
   letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:6px}
+
+/* ── Goals management modal ─────────────────────────────── */
+#goal-modal-overlay,#cat-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:none;align-items:flex-end;justify-content:center;z-index:200}
+#goal-modal-overlay.open,#cat-modal-overlay.open{display:flex}
+#goal-modal,#cat-modal{background:var(--surface);width:100%;max-width:480px;
+  border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));
+  max-height:80vh;overflow-y:auto}
+#goal-modal h3,#cat-modal h3{font-size:17px;font-weight:700;margin-bottom:14px}
+#goal-modal label,#cat-modal label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted);margin-top:10px;display:block;margin-bottom:4px}
+#goal-modal input,#cat-modal input{width:100%;border:1.5px solid var(--border);border-radius:10px;
+  padding:9px 12px;font-size:15px;font-family:var(--font);background:var(--bg);
+  color:var(--text);box-sizing:border-box}
+#goal-modal input:focus,#cat-modal input:focus{outline:none;border-color:var(--accent)}
+
+/* ── Goals view ──────────────────────────────────────────── */
+.goals-hdr{display:flex;align-items:center;padding:10px 14px 6px;flex-shrink:0}
+.goals-hdr-lbl{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--muted);flex:1}
+.goals-manage-btn{background:none;border:none;color:var(--accent);font-size:22px;
+  cursor:pointer;padding:2px;touch-action:manipulation;border-radius:6px;line-height:1}
+.goal-card{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:.5px solid var(--border);cursor:pointer;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;background:var(--surface);transition:background .12s}
+.goal-card:active,.goal-card.active{background:var(--bg)}
+.goal-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.goal-card-name{font-size:15px;font-weight:700;flex:1;color:var(--text)}
+.goal-card-count{font-size:11px;font-weight:700;color:var(--muted);
+  background:rgba(60,60,67,.1);border-radius:10px;padding:1px 8px}
+.goal-card .ti-chevron-right{color:var(--muted);font-size:14px;flex-shrink:0}
+.goal-filtered-hdr{padding:6px 14px 4px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  border-top:.5px solid var(--border)}
+
+/* ── Categories view ─────────────────────────────────────── */
+.cats-grid{display:flex;flex-wrap:wrap;gap:7px;padding:4px 14px 10px}
+.cat-card{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:14px;
+  border:1.5px solid var(--tc,#ccc);background:transparent;cursor:pointer;
+  font-size:12px;font-weight:700;color:var(--tc,#666);touch-action:manipulation;
+  font-family:var(--font);-webkit-tap-highlight-color:transparent;transition:all .15s}
+.cat-card:active,.cat-card.active{background:var(--tc,#ccc);color:#fff}
+.cat-card .tc-dot{width:7px;height:7px;border-radius:50%;background:var(--tc);flex-shrink:0}
+.cat-card.active .tc-dot{background:#fff}
+.cat-card .tc-count{font-size:9px;opacity:.75;margin-left:1px}
+
+/* ── Goal/Category label chips on rows ───────────────────── */
+.gc-chip{display:inline-flex;align-items:center;font-size:9px;font-weight:800;
+  letter-spacing:.03em;border-radius:4px;padding:1px 5px;margin-right:2px;
+  vertical-align:middle}
+
+/* ── Desktop project row edit/delete buttons ─────────────── */
+.proj-hdr-acts{display:flex;gap:2px;flex-shrink:0}
+.proj-hdr-btn{border:none;background:none;color:var(--muted);cursor:pointer;
+  padding:5px 6px;border-radius:6px;font-size:15px;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;line-height:1}
+.proj-hdr-btn:active{background:rgba(60,60,67,.1);color:var(--text)}
+.proj-hdr-btn.del:active{color:#FF3B30;background:rgba(255,59,48,.08)}
 
 /* ── Alive focus rows ───────────────────────────────────── */
 .focus-row-wrap{display:flex;align-items:stretch;border-bottom:.5px solid var(--border)}
@@ -1109,6 +1167,8 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
       <div id="focus-seg">
         <button class="seg-btn active" id="seg-all"    onclick="setMode('all')">All</button>
         <button class="seg-btn"        id="seg-focus"  onclick="setMode('focus')"><i class="ti ti-pin"></i></button>
+        <button class="seg-btn"        id="seg-goals"  onclick="setMode('goals')"><i class="ti ti-target"></i></button>
+        <button class="seg-btn"        id="seg-cats"   onclick="setMode('cats')"><i class="ti ti-layout-grid"></i></button>
         <button class="seg-btn"        id="seg-tags"   onclick="setMode('tags')"><i class="ti ti-tag"></i></button>
         <button class="seg-btn"        id="seg-people" onclick="setMode('people')"><i class="ti ti-users"></i></button>
       </div>
@@ -1155,6 +1215,10 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
     <input id="modal-assignee" type="text" placeholder="Optional..." autocomplete="off">
     <label>Due date</label>
     <input id="modal-due" type="date">
+    <label>Goal</label>
+    <select id="modal-goal"></select>
+    <label>Category</label>
+    <select id="modal-cat"></select>
     <label>Tags</label>
     <div id="modal-tags-picker" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px"></div>
     <div class="modal-footer">
@@ -1190,6 +1254,10 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
     <input id="proj-modal-name" type="text" placeholder="Project name..." autocomplete="off">
     <label>Color</label>
     <div class="color-palette" id="color-palette"></div>
+    <label>Goal</label>
+    <select id="proj-modal-goal"></select>
+    <label>Category</label>
+    <select id="proj-modal-cat"></select>
     <label>Tags</label>
     <div id="proj-modal-tags-picker" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px"></div>
     <label>Notes</label>
@@ -1199,6 +1267,42 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
       <div style="display:flex;gap:8px;margin-left:auto">
         <button class="btn-cancel" onclick="closeProjModal()">Cancel</button>
         <button id="proj-save-btn" class="btn-primary" onclick="saveProj()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Goals management modal -->
+<div id="goal-modal-overlay" onclick="closeGoalModal()">
+  <div id="goal-modal" onclick="event.stopPropagation()">
+    <h3 id="goal-modal-title">Goals</h3>
+    <div id="goal-list-body"></div>
+    <div style="margin-top:10px;border-top:.5px solid var(--border);padding-top:10px">
+      <label>New goal name</label>
+      <input id="goal-name-inp" type="text" placeholder="e.g. Launch Product, Get Funding…" autocomplete="off">
+      <label style="margin-top:6px">Color</label>
+      <div id="goal-color-swatches" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+      <div class="modal-footer" style="margin-top:10px">
+        <button class="btn-cancel" onclick="closeGoalModal()">Close</button>
+        <button class="btn-primary" onclick="addGoalFromModal()">Add Goal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Categories management modal -->
+<div id="cat-modal-overlay" onclick="closeCatModal()">
+  <div id="cat-modal" onclick="event.stopPropagation()">
+    <h3>Categories</h3>
+    <div id="cat-list-body"></div>
+    <div style="margin-top:10px;border-top:.5px solid var(--border);padding-top:10px">
+      <label>New category name</label>
+      <input id="cat-name-inp" type="text" placeholder="e.g. Finance, Marketing, Family…" autocomplete="off">
+      <label style="margin-top:6px">Color</label>
+      <div id="cat-color-swatches" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+      <div class="modal-footer" style="margin-top:10px">
+        <button class="btn-cancel" onclick="closeCatModal()">Close</button>
+        <button class="btn-primary" onclick="addCatFromModal()">Add Category</button>
       </div>
     </div>
   </div>
@@ -1285,17 +1389,34 @@ async function pushToCloud() {
 window.addEventListener('online',  function(){ if (_cloudPending) pushToCloud(); });
 window.addEventListener('offline', function(){ dotState('offline'); });
 
+var DEFAULT_GOALS = [];
+var DEFAULT_CATEGORIES = [
+  {id:'finance',   name:'Finance',   color:'#34C759'},
+  {id:'marketing', name:'Marketing', color:'#007AFF'},
+  {id:'family',    name:'Family',    color:'#FF9500'},
+  {id:'health',    name:'Health',    color:'#FF2D55'},
+  {id:'personal',  name:'Personal',  color:'#5856D6'},
+];
+
 function ensureDefaults() {
-  if (!D.tasks)    D.tasks    = [];
-  if (!D.log)      D.log      = [];
-  if (!D.projects) D.projects = [];
-  if (!D.focus)    D.focus    = [];
-  if (!D.tags)     D.tags     = DEFAULT_TAGS.map(function(t){return{id:t.id,name:t.name,color:t.color};});
+  if (!D.tasks)      D.tasks      = [];
+  if (!D.log)        D.log        = [];
+  if (!D.projects)   D.projects   = [];
+  if (!D.focus)      D.focus      = [];
+  if (!D.goals)      D.goals      = [];
+  if (!D.categories) D.categories = DEFAULT_CATEGORIES.map(function(c){return{id:c.id,name:c.name,color:c.color};});
+  if (!D.tags)       D.tags       = DEFAULT_TAGS.map(function(t){return{id:t.id,name:t.name,color:t.color};});
   D.tasks.forEach(function(t){
-    if (!t.tags) t.tags=[];
+    if (!t.tags)       t.tags=[];
+    if (!('goalId' in t))     t.goalId=null;
+    if (!('categoryId' in t)) t.categoryId=null;
     (t.steps||[]).forEach(function(s){ if(!s.tags) s.tags=[]; });
   });
-  D.projects.forEach(function(p){ if(!p.tags) p.tags=[]; });
+  D.projects.forEach(function(p){
+    if (!p.tags)             p.tags=[];
+    if (!('goalId' in p))    p.goalId=null;
+    if (!('categoryId' in p)) p.categoryId=null;
+  });
 }
 
 async function ld() {
@@ -1518,8 +1639,12 @@ function editStepSwipe(sid) { openStepModal(sid); }
 
 /* ── Focus list ─────────────────────────────────────────── */
 /* ── Mode: all / focus / tags / people ──────────────────── */
-var currentMode = 'all';
+var currentMode  = 'all';
 var activeTagId  = null;
+var activeGoalId = null;
+var activeCatId  = null;
+var newGoalColor = '#007AFF';
+var newCatColor  = '#34C759';
 var editingTags     = []; // temp tags during task modal edit
 var editingProjTags = []; // temp tags during project modal edit
 var editingStepTags = []; // temp tags during step modal edit
@@ -1537,9 +1662,11 @@ var DEFAULT_TAGS = [
 
 function setMode(m) {
   currentMode = m;
-  if (m !== 'tags') activeTagId = null;
-  ['all','focus','tags','people'].forEach(function(k){
-    document.getElementById('seg-'+k).classList.toggle('active', k===m);
+  if (m !== 'tags')  activeTagId  = null;
+  if (m !== 'goals') activeGoalId = null;
+  if (m !== 'cats')  activeCatId  = null;
+  ['all','focus','goals','cats','tags','people'].forEach(function(k){
+    var el = document.getElementById('seg-'+k); if(el) el.classList.toggle('active', k===m);
   });
   document.getElementById('search-bar').style.display = m==='all' ? '' : 'none';
   renderList();
@@ -1742,6 +1869,197 @@ function renderPeopleView(el) {
   }).join('');
 }
 
+/* ── Goals view ──────────────────────────────────────────── */
+function selectGoal(id) { activeGoalId = activeGoalId===id?null:id; renderList(); }
+
+function renderGoalsView(el) {
+  var goals = D.goals||[];
+  var html = '<div class="goals-hdr">'+
+    '<span class="goals-hdr-lbl">Goals</span>'+
+    '<button class="goals-manage-btn" onclick="openGoalModal()" title="Manage goals"><i class="ti ti-settings"></i></button>'+
+  '</div>';
+  if (!goals.length) {
+    html += '<div class="empty-st"><i class="ti ti-target"></i><p>No goals yet.<br>Click ⚙ to add your first goal.</p></div>';
+    el.innerHTML = html; return;
+  }
+  html += goals.map(function(g){
+    var projCount = D.projects.filter(function(p){return p.goalId===g.id;}).length;
+    var taskCount = D.tasks.filter(function(t){return t.goalId===g.id;}).length;
+    var total = projCount+taskCount;
+    var isA = activeGoalId===g.id;
+    return '<div class="goal-card'+(isA?' active':'')+'" onclick="selectGoal(\''+g.id+'\')">'+
+      '<div class="goal-dot" style="background:'+g.color+'"></div>'+
+      '<span class="goal-card-name">'+xe(g.name)+'</span>'+
+      '<span class="goal-card-count">'+total+'</span>'+
+      '<i class="ti ti-chevron-right'+(isA?' ti-chevron-down':'')+'"></i>'+
+    '</div>';
+  }).join('');
+
+  if (activeGoalId) {
+    var g = goals.find(function(x){return x.id===activeGoalId;});
+    var projs = D.projects.filter(function(p){return p.goalId===activeGoalId;});
+    var tasks = D.tasks.filter(function(t){return t.goalId===activeGoalId;});
+    html += '<div class="goal-filtered-hdr">'+(g?xe(g.name):'?')+' · '+projs.length+' project'+(projs.length!==1?'s':'')+', '+tasks.length+' task'+(tasks.length!==1?'s':'')+'</div>';
+    // Show projects with their tasks
+    projs.forEach(function(p){
+      var pt = D.tasks.filter(function(t){return t.projectId===p.id;});
+      html += '<div style="padding:6px 14px 2px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:'+p.color+'">📁 '+xe(p.name)+'</div>';
+      if (pt.length) html += pt.map(taskRowHtml).join('');
+      else html += '<div style="padding:4px 14px 8px;font-size:12px;color:var(--muted)">No tasks</div>';
+    });
+    // Show directly tagged tasks (not in any project, or in project but goalId set on task)
+    var directTasks = tasks.filter(function(t){return !t.projectId || !projs.find(function(p){return p.id===t.projectId;});});
+    if (directTasks.length) {
+      html += '<div style="padding:6px 14px 2px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Direct Tasks</div>';
+      html += directTasks.map(taskRowHtml).join('');
+    }
+    if (!projs.length && !tasks.length) {
+      html += '<div class="empty-st"><i class="ti ti-flag"></i><p>No items under this goal yet.<br>Edit a project or task to assign it.</p></div>';
+    }
+  }
+  el.innerHTML = html;
+}
+
+/* ── Categories view ─────────────────────────────────────── */
+function selectCat(id) { activeCatId = activeCatId===id?null:id; renderList(); }
+
+function renderCatsView(el) {
+  var cats = D.categories||[];
+  var html = '<div class="goals-hdr">'+
+    '<span class="goals-hdr-lbl">Categories</span>'+
+    '<button class="goals-manage-btn" onclick="openCatModal()" title="Manage categories"><i class="ti ti-settings"></i></button>'+
+  '</div>'+
+  '<div class="cats-grid">'+
+    cats.map(function(c){
+      var pCount = D.projects.filter(function(p){return p.categoryId===c.id;}).length;
+      var tCount = D.tasks.filter(function(t){return t.categoryId===c.id;}).length;
+      var isA = activeCatId===c.id;
+      return '<button class="cat-card'+(isA?' active':'')+'" style="--tc:'+c.color+'" onclick="selectCat(\''+c.id+'\')">'+
+        '<span class="tc-dot"></span>'+xe(c.name)+'<span class="tc-count">'+(pCount+tCount)+'</span>'+
+      '</button>';
+    }).join('')+
+    (!cats.length?'<div style="color:var(--muted);font-size:13px;padding:4px 0">No categories yet. Click ⚙ to add some.</div>':'')+
+  '</div>';
+
+  if (activeCatId) {
+    var cat = cats.find(function(c){return c.id===activeCatId;});
+    var projs = D.projects.filter(function(p){return p.categoryId===activeCatId;});
+    var tasks = D.tasks.filter(function(t){return t.categoryId===activeCatId;});
+    html += '<div class="goal-filtered-hdr">'+(cat?xe(cat.name):'?')+' · '+projs.length+' project'+(projs.length!==1?'s':'')+', '+tasks.length+' task'+(tasks.length!==1?'s':'')+'</div>';
+    projs.forEach(function(p){
+      var pt = D.tasks.filter(function(t){return t.projectId===p.id;});
+      html += '<div style="padding:6px 14px 2px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:'+p.color+'">📁 '+xe(p.name)+'</div>';
+      if (pt.length) html += pt.map(taskRowHtml).join('');
+      else html += '<div style="padding:4px 14px 8px;font-size:12px;color:var(--muted)">No tasks</div>';
+    });
+    var directTasks = tasks.filter(function(t){return !t.projectId || !projs.find(function(p){return p.id===t.projectId;});});
+    if (directTasks.length) {
+      html += '<div style="padding:6px 14px 2px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Direct Tasks</div>';
+      html += directTasks.map(taskRowHtml).join('');
+    }
+    if (!projs.length && !tasks.length) {
+      html += '<div class="empty-st"><i class="ti ti-layout-grid"></i><p>No items in this category yet.</p></div>';
+    }
+  }
+  el.innerHTML = html;
+}
+
+/* ── Goals management modal ──────────────────────────────── */
+var GC_COLORS = ['#007AFF','#FF9500','#FF3B30','#34C759','#5856D6','#FF2D55','#AC8E68','#30B0C7'];
+
+function openGoalModal() {
+  renderGoalListBody(); renderGoalColorSwatches();
+  document.getElementById('goal-name-inp').value='';
+  document.getElementById('goal-modal-overlay').classList.add('open');
+}
+function closeGoalModal() { document.getElementById('goal-modal-overlay').classList.remove('open'); }
+
+function renderGoalListBody() {
+  var goals=D.goals||[];
+  document.getElementById('goal-list-body').innerHTML = goals.length
+    ? goals.map(function(g){
+        return '<div class="tag-list-row">'+
+          '<div class="tag-list-dot" style="background:'+g.color+'"></div>'+
+          '<span class="tag-list-name">'+xe(g.name)+'</span>'+
+          '<button class="tag-del-btn" onclick="deleteGoal(\''+g.id+'\')"><i class="ti ti-x"></i></button>'+
+        '</div>';
+      }).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No goals yet.</div>';
+}
+function renderGoalColorSwatches() {
+  document.getElementById('goal-color-swatches').innerHTML = GC_COLORS.map(function(c){
+    return '<div class="color-swatch'+(newGoalColor===c?' selected':'')+'" style="background:'+c+'" onclick="pickGoalColor(\''+c+'\')"></div>';
+  }).join('');
+}
+function pickGoalColor(c){ newGoalColor=c; renderGoalColorSwatches(); }
+function addGoalFromModal() {
+  var name=document.getElementById('goal-name-inp').value.trim(); if(!name) return;
+  if(!D.goals) D.goals=[];
+  D.goals.push({id:uid(),name:name,color:newGoalColor});
+  sv(); renderGoalListBody(); renderList();
+  document.getElementById('goal-name-inp').value='';
+}
+function deleteGoal(id) {
+  D.goals=(D.goals||[]).filter(function(g){return g.id!==id;});
+  D.projects.forEach(function(p){if(p.goalId===id)p.goalId=null;});
+  D.tasks.forEach(function(t){if(t.goalId===id)t.goalId=null;});
+  if(activeGoalId===id) activeGoalId=null;
+  sv(); renderGoalListBody(); renderList();
+}
+
+/* ── Categories management modal ─────────────────────────── */
+function openCatModal() {
+  renderCatListBody(); renderCatColorSwatches();
+  document.getElementById('cat-name-inp').value='';
+  document.getElementById('cat-modal-overlay').classList.add('open');
+}
+function closeCatModal() { document.getElementById('cat-modal-overlay').classList.remove('open'); }
+
+function renderCatListBody() {
+  var cats=D.categories||[];
+  document.getElementById('cat-list-body').innerHTML = cats.length
+    ? cats.map(function(c){
+        return '<div class="tag-list-row">'+
+          '<div class="tag-list-dot" style="background:'+c.color+'"></div>'+
+          '<span class="tag-list-name">'+xe(c.name)+'</span>'+
+          '<button class="tag-del-btn" onclick="deleteCat(\''+c.id+'\')"><i class="ti ti-x"></i></button>'+
+        '</div>';
+      }).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:4px 0">No categories yet.</div>';
+}
+function renderCatColorSwatches() {
+  document.getElementById('cat-color-swatches').innerHTML = GC_COLORS.map(function(c){
+    return '<div class="color-swatch'+(newCatColor===c?' selected':'')+'" style="background:'+c+'" onclick="pickCatColor(\''+c+'\')"></div>';
+  }).join('');
+}
+function pickCatColor(c){ newCatColor=c; renderCatColorSwatches(); }
+function addCatFromModal() {
+  var name=document.getElementById('cat-name-inp').value.trim(); if(!name) return;
+  if(!D.categories) D.categories=[];
+  D.categories.push({id:uid(),name:name,color:newCatColor});
+  sv(); renderCatListBody(); renderList();
+  document.getElementById('cat-name-inp').value='';
+}
+function deleteCat(id) {
+  D.categories=(D.categories||[]).filter(function(c){return c.id!==id;});
+  D.projects.forEach(function(p){if(p.categoryId===id)p.categoryId=null;});
+  D.tasks.forEach(function(t){if(t.categoryId===id)t.categoryId=null;});
+  if(activeCatId===id) activeCatId=null;
+  sv(); renderCatListBody(); renderList();
+}
+
+/* ── Goal/Cat select helpers ─────────────────────────────── */
+function buildGoalOptions(selVal) {
+  return '<option value="">No goal</option>'+(D.goals||[]).map(function(g){
+    return '<option value="'+g.id+'"'+(g.id===selVal?' selected':'')+'>'+xe(g.name)+'</option>';
+  }).join('');
+}
+function buildCatOptions(selVal) {
+  return '<option value="">No category</option>'+(D.categories||[]).map(function(c){
+    return '<option value="'+c.id+'"'+(c.id===selVal?' selected':'')+'>'+xe(c.name)+'</option>';
+  }).join('');
+}
+
 /* ── Tag management modal ───────────────────────────────── */
 var TAG_COLORS = ['#007AFF','#FF9500','#FF3B30','#34C759','#5856D6','#FF2D55','#AC8E68','#30B0C7'];
 
@@ -1887,6 +2205,8 @@ function taskRowHtml(t) {
     var tg=(D.tags||[]).find(function(x){return x.id===tid2;});
     return tg?'<span class="task-tag" style="background:'+tg.color+'22;color:'+tg.color+'">'+xe(tg.name)+'</span>':'';
   }).join('');
+  var goalChip=''; if(t.goalId){var tg2=(D.goals||[]).find(function(x){return x.id===t.goalId;}); if(tg2) goalChip='<span class="gc-chip" style="background:'+tg2.color+'22;color:'+tg2.color+'">🎯 '+xe(tg2.name)+'</span>';}
+  var catChip='';  if(t.categoryId){var tc2=(D.categories||[]).find(function(x){return x.id===t.categoryId;}); if(tc2) catChip='<span class="gc-chip" style="background:'+tc2.color+'22;color:'+tc2.color+'">'+xe(tc2.name)+'</span>';}
   var cls = 'task-row'+(t.id===aid?' tr-active':'')+(t.done?' tr-done':'');
   var tid = xe(t.id);
   var pinned = isFocused('task', t.id);
@@ -1900,7 +2220,7 @@ function taskRowHtml(t) {
         '<div class="tr-dot" style="background:'+dot+'"></div>'+
         '<div class="tr-body">'+
           '<div class="tr-name" onclick="event.stopPropagation();this.classList.toggle(\'expanded\')">'+xe(t.title)+'</div>'+
-          '<div class="tr-meta">'+meta+(taskTags?'<span style="margin-left:4px">'+taskTags+'</span>':'')+'</div>'+
+          '<div class="tr-meta">'+meta+(goalChip||catChip?'<span style="margin-left:2px">'+goalChip+catChip+'</span>':'')+(taskTags?'<span style="margin-left:2px">'+taskTags+'</span>':'')+'</div>'+
         '</div>'+
         '<div class="tr-prog"><div class="tr-fill'+(t.done?' tr-fill-done':'')+'" style="width:'+p+'%"></div></div>'+
         '<button class="tr-check'+(t.done?' tr-checked':'')+'" onclick="event.stopPropagation();toggleDone(\''+t.id+'\')" title="'+(t.done?'Reopen':'Done')+'">'+(t.done?'<i class="ti ti-check"></i>':'')+'</button>'+
@@ -1914,19 +2234,26 @@ function taskRowHtml(t) {
 function renderList() {
   var el = document.getElementById('task-list');
   if (currentMode==='focus')  { renderFocusList(el); return; }
+  if (currentMode==='goals')  { renderGoalsView(el); return; }
+  if (currentMode==='cats')   { renderCatsView(el); return; }
   if (currentMode==='tags')   { renderTagsView(el); return; }
   if (currentMode==='people') { renderPeopleView(el); return; }
   var q = searchQ.trim().toLowerCase();
   var tasks = q
-    ? D.tasks.filter(function(t){ return t.title.toLowerCase().indexOf(q) !== -1; })
+    ? D.tasks.filter(function(t){
+        return t.title.toLowerCase().indexOf(q) !== -1 ||
+          (t.assignee||'').toLowerCase().indexOf(q) !== -1 ||
+          (t.steps||[]).some(function(s){ return s.text.toLowerCase().indexOf(q) !== -1; });
+      })
     : D.tasks;
 
   var groups = [];
   D.projects.forEach(function(p) {
     var pt = tasks.filter(function(t){ return t.projectId === p.id; });
-    /* always show project when not searching, even if 0 tasks */
-    if (!q || pt.length) {
-      groups.push({label:p.name, color:p.color, projId:p.id, tasks:pt});
+    /* show project if name matches search OR has matching tasks */
+    if (!q || pt.length || p.name.toLowerCase().indexOf(q) !== -1) {
+      var showTasks = pt.length ? pt : (p.name.toLowerCase().indexOf(q) !== -1 ? D.tasks.filter(function(t){return t.projectId===p.id;}) : pt);
+      groups.push({label:p.name, color:p.color, projId:p.id, tasks:showTasks});
     }
   });
   var standalone = tasks.filter(function(t){ return !t.projectId; });
@@ -1940,15 +2267,19 @@ function renderList() {
   }
 
   el.innerHTML = groups.map(function(g) {
-    var collapsed = collapsedProjs[g.projId] !== false; /* default collapsed */
-    var editBtn = g.projId !== '_standalone'
-      ? '<button class="sect-edit" onclick="event.stopPropagation();openProjModal(\''+g.projId+'\')" title="Edit project"><i class="ti ti-edit"></i></button>'
-      : '';
+    var collapsed = collapsedProjs[g.projId] !== false;
     var countLabel = g.tasks.length ? '<span class="proj-group-count">'+g.tasks.length+'</span>' : '';
     var isProj = g.projId !== '_standalone';
     var projPinned = isProj && isFocused('project', g.projId);
     var pinBtn = isProj
-      ? '<button class="tr-pin'+(projPinned?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'project\',\''+g.projId+'\')" title="'+(projPinned?'Remove from Focus':'Add to Focus')+'"><i class="ti ti-pin"></i></button>'
+      ? '<button class="tr-pin'+(projPinned?' pinned':'')+'" onclick="event.stopPropagation();toggleFocus(\'project\',\''+g.projId+'\')" title="Focus"><i class="ti ti-pin"></i></button>'
+      : '';
+    /* Always-visible Edit+Delete for desktop AND mobile (swipe is bonus on mobile) */
+    var hdrActs = isProj
+      ? '<div class="proj-hdr-acts">'+
+          '<button class="proj-hdr-btn" onclick="event.stopPropagation();openProjModal(\''+g.projId+'\')" title="Edit"><i class="ti ti-edit"></i></button>'+
+          '<button class="proj-hdr-btn del" onclick="event.stopPropagation();deleteProjSwipe(\''+g.projId+'\')" title="Delete"><i class="ti ti-trash"></i></button>'+
+        '</div>'
       : '';
     var swBtns = isProj
       ? '<div class="sw-btns">'+
@@ -1965,6 +2296,7 @@ function renderList() {
             '<span class="proj-group-name" style="color:'+g.color+'">'+xe(g.label)+'</span>'+
             countLabel+
             pinBtn+
+            hdrActs+
             '<i class="ti ti-chevron-right proj-chev'+(collapsed?'':' open')+'"></i>'+
           '</div>'+
         '</div>'+
@@ -2299,6 +2631,8 @@ function openProjModal(id) {
   var nameEl = document.getElementById('proj-modal-name');
   var notesEl = document.getElementById('proj-modal-notes');
   var delBtn = document.getElementById('proj-del-btn');
+  var goalSel = document.getElementById('proj-modal-goal');
+  var catSel  = document.getElementById('proj-modal-cat');
   if (editProjId) {
     var p = gp(editProjId);
     document.getElementById('proj-modal-title').textContent = 'Edit project';
@@ -2306,12 +2640,16 @@ function openProjModal(id) {
     notesEl.value = p ? (p.notes||'') : '';
     selColor = p ? p.color : PROJ_COLORS[0];
     editingProjTags = (p&&p.tags)?p.tags.slice():[];
+    goalSel.innerHTML = buildGoalOptions(p?p.goalId:null);
+    catSel.innerHTML  = buildCatOptions(p?p.categoryId:null);
     delBtn.style.display = 'block';
   } else {
     document.getElementById('proj-modal-title').textContent = 'New project';
     nameEl.value = ''; notesEl.value = '';
     selColor = PROJ_COLORS[0];
     editingProjTags = [];
+    goalSel.innerHTML = buildGoalOptions(null);
+    catSel.innerHTML  = buildCatOptions(null);
     delBtn.style.display = 'none';
   }
   buildColorPalette();
@@ -2331,15 +2669,19 @@ function buildColorPalette() {
 }
 function pickColor(c) { selColor = c; buildColorPalette(); }
 function saveProj() {
-  var name = document.getElementById('proj-modal-name').value.trim(); if (!name) return;
-  var notes = document.getElementById('proj-modal-notes').value;
+  var name   = document.getElementById('proj-modal-name').value.trim(); if (!name) return;
+  var notes  = document.getElementById('proj-modal-notes').value;
+  var goalId = document.getElementById('proj-modal-goal').value||null;
+  var catId  = document.getElementById('proj-modal-cat').value||null;
   if (editProjId) {
     var p = gp(editProjId); if (!p) return;
-    p.name = name; p.color = selColor; p.notes = notes; p.tags = editingProjTags.slice();
+    p.name=name; p.color=selColor; p.notes=notes; p.tags=editingProjTags.slice();
+    p.goalId=goalId; p.categoryId=catId;
     lg('Project updated: "'+name+'"');
     if (viewProjId === editProjId) renderDetail();
   } else {
-    D.projects.push({id:uid(), name:name, color:selColor, notes:notes, tags:editingProjTags.slice(), createdAt:new Date().toISOString()});
+    D.projects.push({id:uid(),name:name,color:selColor,notes:notes,tags:editingProjTags.slice(),
+      goalId:goalId,categoryId:catId,createdAt:new Date().toISOString()});
     lg('Project created: "'+name+'"');
   }
   sv(); closeProjModal(); render();
@@ -2478,6 +2820,8 @@ function openModal(id) {
   var nameEl=document.getElementById('modal-name');
   var assEl=document.getElementById('modal-assignee');
   var projSel=document.getElementById('modal-project');
+  var goalSel=document.getElementById('modal-goal');
+  var catSel=document.getElementById('modal-cat');
   var saveBtn=document.getElementById('modal-save');
   projSel.innerHTML='<option value="">No project</option>'+
     D.projects.map(function(p){return '<option value="'+p.id+'">'+xe(p.name)+'</option>';}).join('');
@@ -2489,11 +2833,17 @@ function openModal(id) {
     assEl.value=t?(t.assignee||''):'';
     projSel.value=t?(t.projectId||''):'';
     dueEl.value=t?(t.dueDate||''):'';
-    editingTags = (t&&t.tags)?t.tags.slice():[];
+    goalSel.innerHTML=buildGoalOptions(t?t.goalId:null);
+    catSel.innerHTML=buildCatOptions(t?t.categoryId:null);
+    editingTags=(t&&t.tags)?t.tags.slice():[];
     saveBtn.onclick=saveEdit;
   } else {
     document.getElementById('modal-title').textContent='New task';
-    nameEl.value='';assEl.value='';projSel.value='';dueEl.value='';
+    nameEl.value='';assEl.value='';dueEl.value='';
+    /* Pre-fill project from currently open project view */
+    projSel.value = viewProjId || '';
+    goalSel.innerHTML=buildGoalOptions(null);
+    catSel.innerHTML=buildCatOptions(null);
     editingTags=[];
     saveBtn.onclick=saveNew;
   }
@@ -2510,7 +2860,10 @@ function saveNew() {
   var ass=document.getElementById('modal-assignee').value.trim();
   var projId=document.getElementById('modal-project').value||null;
   var due=document.getElementById('modal-due').value||null;
-  var task={id:uid(),title:name,assignee:ass,projectId:projId,dueDate:due,done:false,notes:'',createdAt:new Date().toISOString(),steps:[],tags:editingTags.slice()};
+  var goalId=document.getElementById('modal-goal').value||null;
+  var catId=document.getElementById('modal-cat').value||null;
+  var task={id:uid(),title:name,assignee:ass,projectId:projId,dueDate:due,done:false,notes:'',
+    createdAt:new Date().toISOString(),steps:[],tags:editingTags.slice(),goalId:goalId,categoryId:catId};
   D.tasks.unshift(task);aid=task.id;ctab='steps';
   lg('Task created: "'+name+'"');
   sv();closeModal();render();
@@ -2521,8 +2874,11 @@ function saveEdit() {
   var ass=document.getElementById('modal-assignee').value.trim();
   var projId=document.getElementById('modal-project').value||null;
   var due=document.getElementById('modal-due').value||null;
+  var goalId=document.getElementById('modal-goal').value||null;
+  var catId=document.getElementById('modal-cat').value||null;
   var t=gt(editId); if(!t) return;
-  var old=t.title;t.title=name;t.assignee=ass;t.projectId=projId;t.dueDate=due;t.tags=editingTags.slice();
+  var old=t.title;t.title=name;t.assignee=ass;t.projectId=projId;t.dueDate=due;
+  t.tags=editingTags.slice();t.goalId=goalId;t.categoryId=catId;
   lg('Task updated: "'+old+'" → "'+name+'"');
   sv();closeModal();render();
 }
