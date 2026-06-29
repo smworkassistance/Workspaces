@@ -632,8 +632,10 @@ async function loadAI(){
       await saveAI();
     }
   }catch(e){
+    var emsg = (e&&(e.message||e.details||e.hint||JSON.stringify(e)))||String(e)||'Load failed';
     console.error('AI load error:', e);
-    setSaveStatus('error', (e&&(e.message||e.hint))||'Load failed');
+    setSaveStatus('error', emsg);
+    showDbError('Load failed: '+emsg);
     if(fallback){
       if(fallback.rows) kbRows = fallback.rows;
       if(fallback.log) logData = Object.assign({raw:[],daily:[],weekly:[],monthly:[]}, fallback.log);
