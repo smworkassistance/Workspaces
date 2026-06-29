@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v17</title>
+<title>Chain v18</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -1203,6 +1203,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   <a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
   <a href="mindmapv15.html" class="bn-item"><i class="ti ti-360-view"></i><span>3D Map</span></a>
   <a href="calendar.html" class="bn-item"><i class="ti ti-calendar"></i><span>Calendar</span></a>
+  <a href="timeblocksv1.html" class="bn-item"><i class="ti ti-clock-bolt"></i><span>Time</span></a>
   <a href="mindmapv23.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
 </nav>
 
@@ -1409,6 +1410,7 @@ function ensureDefaults() {
   if (!D.goals)      D.goals      = [];
   if (!D.categories) D.categories = DEFAULT_CATEGORIES.map(function(c){return{id:c.id,name:c.name,color:c.color};});
   if (!D.tags)       D.tags       = DEFAULT_TAGS.map(function(t){return{id:t.id,name:t.name,color:t.color};});
+  if (!D.timeBlocks) D.timeBlocks = [];
   D.tasks.forEach(function(t){
     if (!t.tags)       t.tags=[];
     if (!('goalId' in t))     t.goalId=null;

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Time Blocks</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --accent:#7C6FFF;--bg:#F2F2F7;--card:#fff;
+  --text1:#1C1C1E;--text2:rgba(60,60,67,.6);--sep:rgba(60,60,67,.12);
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Segoe UI,sans-serif;
+  background:var(--bg);color:var(--text1);-webkit-font-smoothing:antialiased}
+#topbar{
+  position:sticky;top:0;z-index:40;
+  height:calc(44px + env(safe-area-inset-top,0px));
+  padding-top:env(safe-area-inset-top,0px);
+  background:rgba(242,242,247,.95);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:.5px solid var(--sep);
+  display:flex;align-items:center;padding-inline:16px;gap:10px;
+}
+#topbar-title{font-size:17px;font-weight:700;flex:1;display:flex;align-items:center;gap:6px}
+#topbar-date{font-size:13px;color:var(--text2);font-weight:600;white-space:nowrap}
+#sync-dot{width:8px;height:8px;border-radius:50%;background:#34C759;flex-shrink:0}
+#sync-dot.saving{background:#FF9500}#sync-dot.offline,#sync-dot.err{background:#FF3B30}
+#sync-dot.local{background:#FF9500}
+#main{padding:12px 16px calc(80px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+/* Day strip */
+#day-strip{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.strip-label{font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+#strip-track{position:relative;height:20px;background:#E5E5EA;border-radius:6px;overflow:hidden;margin-bottom:4px}
+.strip-seg{position:absolute;top:0;height:100%}
+#strip-hours{display:flex;justify-content:space-between}
+#strip-hours span{font-size:9px;color:var(--text2);font-weight:600}
+/* Block cards */
+.block-card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;transition:box-shadow .2s}
+.block-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.block-bar{width:5px;border-radius:3px;align-self:stretch;flex-shrink:0}
+.block-info{flex:1;min-width:0}
+.block-name{font-size:15px;font-weight:700}
+.block-meta{font-size:12px;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:6px}
+.badge{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:20px;color:#fff;flex-shrink:0}
+.badge-flex{background:#34C759}.badge-pri{background:#FF3B30}
+.block-chevron{color:var(--text2);font-size:18px;transition:transform .2s;flex-shrink:0}
+.block-chevron.open{transform:rotate(90deg)}
+.block-acts{display:flex;gap:2px}
+.block-act{background:none;border:none;color:var(--text2);font-size:19px;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent}
+.block-body{display:none;padding:0 14px 12px 29px}
+.block-body.open{display:block}
+.block-tasks{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+/* Task row inside block */
+.bt-row{display:flex;align-items:flex-start;gap:10px;padding:9px 10px;background:rgba(0,0,0,.025);border-radius:9px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bt-check{width:20px;height:20px;border-radius:50%;border:2px solid #C7C7CC;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s}
+.bt-check.done{background:var(--accent);border-color:var(--accent);color:#fff;font-size:12px}
+.bt-info{flex:1;min-width:0}
+.bt-title{font-size:14px;font-weight:500;line-height:1.3}
+.bt-title.done{text-decoration:line-through;color:var(--text2)}
+.bt-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.bt-empty{font-size:13px;color:var(--text2);text-align:center;padding:14px 0;font-style:italic}
+/* free gap label */
+.free-gap{display:flex;align-items:center;gap:8px;padding:6px 14px;color:var(--text2);font-size:12px}
+.free-gap::before,.free-gap::after{content:'';flex:1;height:1px;background:var(--sep)}
+/* empty state */
+.empty-state{text-align:center;padding:56px 24px;color:var(--text2)}
+.empty-state i{font-size:52px;display:block;margin-bottom:12px;opacity:.35}
+.empty-state h3{font-size:18px;font-weight:700;color:var(--text1);margin-bottom:6px}
+.empty-state p{font-size:14px;line-height:1.6}
+/* FAB */
+#fab{position:fixed;right:20px;bottom:calc(68px + env(safe-area-inset-bottom,0px));
+  width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;
+  border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(124,111,255,.45);z-index:30;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* Modal */
+.mo{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center}
+.mo.open{display:flex}
+.ms{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:580px;
+  padding-bottom:env(safe-area-inset-bottom,0px);max-height:92vh;overflow-y:auto}
+.ms-drag{width:36px;height:4px;background:#E5E5EA;border-radius:2px;margin:10px auto 0}
+.ms-title{font-size:17px;font-weight:700;text-align:center;padding:10px 16px 14px}
+.ms-body{padding:0 16px 24px;display:flex;flex-direction:column;gap:14px}
+.fl{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:5px;letter-spacing:.02em}
+.fi{width:100%;padding:10px 12px;border:1.5px solid var(--sep);border-radius:10px;
+  font-size:15px;font-family:inherit;color:var(--text1);background:#fff;outline:none;appearance:none}
+.fi:focus{border-color:var(--accent)}
+.fr{display:flex;gap:10px}.fr .fw{flex:1}
+.mode-tgl{display:flex;background:#F2F2F7;border-radius:10px;padding:2px;gap:2px}
+.mode-btn{flex:1;padding:9px;border:none;border-radius:8px;font-size:14px;font-weight:600;
+  cursor:pointer;background:none;color:var(--text2);font-family:inherit;-webkit-tap-highlight-color:transparent}
+.mode-btn.active{background:#fff;color:var(--text1);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;-webkit-tap-highlight-color:transparent;transition:border-color .15s}
+.sw.sel{border-color:#1C1C1E}
+.save-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;
+  padding:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;width:100%;-webkit-tap-highlight-color:transparent}
+.del-btn{background:none;border:none;color:#FF3B30;font-size:15px;font-weight:600;
+  font-family:inherit;cursor:pointer;text-align:center;padding:8px;width:100%}
+.pin-row{display:flex;align-items:center;gap:8px;padding:8px;background:#F9F9FB;border-radius:8px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pin-chk{width:20px;height:20px;border-radius:4px;border:2px solid #C7C7CC;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center}
+.pin-chk.sel{background:var(--accent);border-color:var(--accent);color:#fff;font-size:12px}
+/* Bottom nav */
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:50;
+  height:calc(49px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);
+  background:rgba(242,242,247,.95);backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid rgba(60,60,67,.18);
+  display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#bottom-nav::-webkit-scrollbar{display:none}
+.bn-item{flex:0 0 16.66%;min-width:54px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;
+  color:rgba(60,60,67,.4);text-decoration:none;font-size:9px;font-weight:600;letter-spacing:.02em;
+  padding-top:6px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.bn-item i{font-size:21px;line-height:1}
+.bn-item.active{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span id="topbar-title"><i class="ti ti-clock-bolt"></i>Time Blocks</span>
+  <span id="topbar-date"></span>
+  <div id="sync-dot" title="Synced"></div>
+</div>
+
+<div id="main">
+  <div id="day-strip">
+    <div class="strip-label">Today's Structure</div>
+    <div id="strip-track"></div>
+    <div id="strip-hours">
+      <span>0</span><span>3</span><span>6</span><span>9</span>
+      <span>12</span><span>15</span><span>18</span><span>21</span><span>24</span>
+    </div>
+  </div>
+  <div id="blocks-container"></div>
+</div>
+
+<button id="fab" onclick="openBlockModal(null)"><i class="ti ti-plus"></i></button>
+
+<!-- Block modal -->
+<div class="mo" id="bmo" onclick="if(event.target===this)closeBM()">
+  <div class="ms">
+    <div class="ms-drag"></div>
+    <div class="ms-title" id="bm-title">Add Time Block</div>
+    <div class="ms-body">
+      <div>
+        <div class="fl">Block Name</div>
+        <input class="fi" id="bm-name" placeholder="e.g. Shreemant Time, Deep Work, Family…">
+      </div>
+      <div class="fr">
+        <div class="fw"><div class="fl">Start Time</div><input class="fi" type="time" id="bm-start" value="09:00"></div>
+        <div class="fw"><div class="fl">End Time</div><input class="fi" type="time" id="bm-end" value="11:00"></div>
+      </div>
+      <div>
+        <div class="fl">Color</div>
+        <div class="swatches" id="bm-swatches"></div>
+      </div>
+      <div>
+        <div class="fl">Block Type</div>
+        <div class="mode-tgl">
+          <button class="mode-btn active" id="btn-flex" onclick="setMode('flexible')">🔓 Flexible</button>
+          <button class="mode-btn" id="btn-pri" onclick="setMode('priority')">🔒 Priority Only</button>
+        </div>
+        <div id="mode-hint" style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5"></div>
+      </div>
+      <!-- Flexible filters -->
+      <div id="flex-section">
+        <div class="fl">Filter Tasks By <span style="font-weight:400">(leave blank = show all incomplete tasks)</span></div>
+        <select class="fi" id="bm-goal" style="margin-bottom:8px"><option value="">Any Goal</option></select>
+        <select class="fi" id="bm-cat"  style="margin-bottom:8px"><option value="">Any Category</option></select>
+        <select class="fi" id="bm-ass"><option value="">Any Assignee / Delegate</option></select>
+      </div>
+      <!-- Priority: pin tasks -->
+      <div id="pri-section" style="display:none">
+        <div class="fl">Pin Specific Tasks to this Block</div>
+        <input class="fi" id="pin-q" placeholder="Search tasks…" oninput="renderPinList()" style="margin-bottom:8px">
+        <div id="pin-list" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
+      </div>
+      <button class="save-btn" onclick="saveBM()">Save Block</button>
+      <button class="del-btn" id="bm-del" style="display:none" onclick="delBlockFromModal()">Delete Block</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav id="bottom-nav">
+  <a href="chain.html"         class="bn-item"><i class="ti ti-home"></i><span>Chain</span></a>
+  <a href="mindmapv18.html"    class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>
+  <a href="mindmapv15.html"    class="bn-item"><i class="ti ti-360-view"></i><span>3D Map</span></a>
+  <a href="calendar.html"      class="bn-item"><i class="ti ti-calendar"></i><span>Calendar</span></a>
+  <a href="timeblocksv1.html"  class="bn-item active"><i class="ti ti-clock-bolt"></i><span>Time</span></a>
+  <a href="mindmapv23.html"    class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
+</nav>
+
+<script>
+/* ── Supabase ── */
+var SUPABASE_URL = 'https://ienfjretjvoupzwncnjb.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZqcmV0anZvdXB6d25jbmpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTU4NjcsImV4cCI6MjA5NzM3MTg2N30.zItQB5JjKGaM2gGR4eJWBGX4WGgvc1CEYG9Z1I7yU2A';
+var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var LOCAL_KEY = 'chain_local_v1';
+var STATE_ROW = 'main';
+var clientId = Math.random().toString(36).slice(2);
+var saveTimer;
+var _cloudPending = false;
+
+/* ── Data ── */
+var D = {};
+
+function ensureDefaults() {
+  if (!D.tasks)       D.tasks       = [];
+  if (!D.projects)    D.projects    = [];
+  if (!D.goals)       D.goals       = [];
+  if (!D.categories)  D.categories  = [];
+  if (!D.tags)        D.tags        = [];
+  if (!D.timeBlocks)  D.timeBlocks  = [];
+  D.tasks.forEach(function(t){ if(!t.steps) t.steps=[]; });
+}
+
+function dotState(s) {
+  var el = document.getElementById('sync-dot');
+  el.className = s;
+  el.title = {ok:'Synced',saving:'Saving…',local:'Saved locally',offline:'Offline',err:'Sync error'}[s]||'';
+}
+
+function sv() {
+  D._ts = Date.now();
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(D)); } catch(e) {}
+  dotState('local');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushToCloud, 900);
+}
+
+async function pushToCloud() {
+  if (!navigator.onLine) { _cloudPending=true; dotState('offline'); return; }
+  dotState('saving');
+  try {
+    var res = await db.from('chain_state').upsert(
+      {id:STATE_ROW, data:D, client_id:clientId, updated_at:new Date().toISOString()},
+      {onConflict:'id'}
+    );
+    if (res.error) throw res.error;
+    _cloudPending=false; dotState('ok');
+  } catch(e) { _cloudPending=true; dotState('err'); console.error(e); }
+}
+
+async function loadData() {
+  /* 1. Local cache — instant */
+  var raw = localStorage.getItem(LOCAL_KEY);
+  if (raw) { try { D = JSON.parse(raw); } catch(e) { D = {}; } }
+  ensureDefaults();
+  render();
+  /* 2. Cloud — merge if newer */
+  try {
+    var r = await db.from('chain_state').select('data').eq('id',STATE_ROW).maybeSingle();
+    if (r.error) throw r.error;
+    if (r.data && r.data.data) {
+      var cloud = r.data.data;
+      if (!D._ts || (cloud._ts && cloud._ts > D._ts)) {
+        D = cloud;
+        ensureDefaults();
+        try { localStorage.setItem(LOCAL_KEY, JSON.stringify(D)); } catch(e) {}
+        render();
+      }
+    }
+  } catch(e) { console.warn('Cloud load:', e); }
+  dotState('ok');
+}
+
+window.addEventListener('online',  function(){ if(_cloudPending) pushToCloud(); });
+window.addEventListener('offline', function(){ dotState('offline'); });
+
+/* ── Helpers ── */
+function xe(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function toMins(hhmm) {
+  var p = (hhmm||'00:00').split(':');
+  return parseInt(p[0]||0)*60 + parseInt(p[1]||0);
+}
+
+function fmtTime(hhmm) {
+  var p = (hhmm||'00:00').split(':');
+  var h = parseInt(p[0]||0), m = parseInt(p[1]||0);
+  var ap = h>=12 ? 'PM' : 'AM';
+  var hh = h%12 || 12;
+  return hh + (m?':'+String(m).padStart(2,'0'):'') + ' ' + ap;
+}
+
+function sortedBlocks() {
+  return (D.timeBlocks||[]).slice().sort(function(a,b){ return toMins(a.start)-toMins(b.start); });
+}
+
+function getBlockTasks(block) {
+  var all = (D.tasks||[]).filter(function(t){ return !t.done; });
+  if (block.mode === 'priority') {
+    var ids = block.pinnedTaskIds||[];
+    return ids.map(function(id){ return D.tasks.find(function(t){ return t.id===id; }); }).filter(Boolean);
+  }
+  /* flexible: apply filters */
+  return all.filter(function(t){
+    if (block.goalId && t.goalId !== block.goalId) return false;
+    if (block.categoryId && t.categoryId !== block.categoryId) return false;
+    if (block.assignee && (t.assignee||'').toLowerCase() !== block.assignee.toLowerCase()) return false;
+    return true;
+  });
+}
+
+function projName(t) {
+  if (!t.projId) return '';
+  var p = (D.projects||[]).find(function(p){ return p.id===t.projId; });
+  return p ? p.name : '';
+}
+
+/* ── Render ── */
+function render() {
+  renderDate();
+  renderStrip();
+  renderBlocks();
+}
+
+function renderDate() {
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var now = new Date();
+  document.getElementById('topbar-date').textContent =
+    days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()];
+}
+
+function renderStrip() {
+  var track = document.getElementById('strip-track');
+  track.innerHTML = '';
+  sortedBlocks().forEach(function(b){
+    var s = toMins(b.start), e = toMins(b.end);
+    if (e <= s) return;
+    var left = (s/1440*100).toFixed(2)+'%';
+    var width = ((e-s)/1440*100).toFixed(2)+'%';
+    var seg = document.createElement('div');
+    seg.className = 'strip-seg';
+    seg.style.cssText = 'left:'+left+';width:'+width+';background:'+(b.color||'#7C6FFF')+';opacity:.8';
+    seg.title = b.name+' ('+fmtTime(b.start)+' – '+fmtTime(b.end)+')';
+    track.appendChild(seg);
+  });
+}
+
+var openCards = {};
+
+function renderBlocks() {
+  var el = document.getElementById('blocks-container');
+  var blocks = sortedBlocks();
+
+  if (!blocks.length) {
+    el.innerHTML = '<div class="empty-state"><i class="ti ti-clock-bolt"></i><h3>No time blocks yet</h3><p>Tap + to create your first block.<br>Structure your day with flexible or priority slots.</p></div>';
+    return;
+  }
+
+  var html = '';
+  var prevEnd = 0;
+
+  blocks.forEach(function(b, i) {
+    var sm = toMins(b.start);
+    /* Free gap before this block */
+    if (sm > prevEnd && i > 0) {
+      html += '<div class="free-gap">Free '+fmtTime(String(Math.floor(prevEnd/60)).padStart(2,'0')+':'+String(prevEnd%60).padStart(2,'0'))+' – '+fmtTime(b.start)+'</div>';
+    }
+
+    var tasks = getBlockTasks(b);
+    var doneCount = tasks.filter(function(t){ return t.done; }).length;
+    var badge = b.mode==='priority'
+      ? '<span class="badge badge-pri">Priority</span>'
+      : '<span class="badge badge-flex">Flexible</span>';
+    var filterHint = '';
+    if (b.mode==='flexible') {
+      var parts = [];
+      if (b.goalId) { var g=(D.goals||[]).find(function(g){return g.id===b.goalId;}); if(g) parts.push('Goal: '+g.name); }
+      if (b.categoryId) { var c=(D.categories||[]).find(function(c){return c.id===b.categoryId;}); if(c) parts.push(c.name); }
+      if (b.assignee) parts.push('@'+b.assignee);
+      if (parts.length) filterHint = ' · '+parts.join(', ');
+    }
+    var isOpen = !!openCards[b.id];
+    html += '<div class="block-card" id="card-'+b.id+'">';
+    html += '<div class="block-hdr" onclick="toggleCard(\''+b.id+'\')">'+
+      '<div class="block-bar" style="background:'+(b.color||'#7C6FFF')+'"></div>'+
+      '<div class="block-info">'+
+        '<div class="block-name">'+xe(b.name)+'</div>'+
+        '<div class="block-meta">'+fmtTime(b.start)+' – '+fmtTime(b.end)+filterHint+'</div>'+
+      '</div>'+
+      badge+
+      '<div class="block-acts" onclick="event.stopPropagation()">'+
+        '<button class="block-act" onclick="openBlockModal(\''+b.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>'+
+      '</div>'+
+      '<i class="ti ti-chevron-right block-chevron'+(isOpen?' open':'')+'"></i>'+
+    '</div>';
+
+    html += '<div class="block-body'+(isOpen?' open':'')+'" id="body-'+b.id+'">';
+    if (tasks.length) {
+      html += '<div class="block-tasks">';
+      tasks.forEach(function(t){
+        var pn = projName(t);
+        html += '<div class="bt-row" onclick="toggleTask(\''+t.id+'\',\''+b.id+'\')">'+
+          '<div class="bt-check'+(t.done?' done':'')+'">'+(t.done?'<i class="ti ti-check"></i>':'')+'</div>'+
+          '<div class="bt-info">'+
+            '<div class="bt-title'+(t.done?' done':'')+'">'+xe(t.title)+'</div>'+
+            (pn||t.assignee ? '<div class="bt-sub">'+(pn?xe(pn):'')+((pn&&t.assignee)?' · ':'')+((t.assignee)?'@'+xe(t.assignee):'')+'</div>' : '')+
+          '</div>'+
+        '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="bt-empty">No tasks match this block</div>';
+    }
+    html += '</div></div>';
+    prevEnd = Math.max(prevEnd, toMins(b.end));
+  });
+
+  el.innerHTML = html;
+}
+
+function toggleCard(id) {
+  openCards[id] = !openCards[id];
+  var body = document.getElementById('body-'+id);
+  var chevron = document.querySelector('#card-'+id+' .block-chevron');
+  if (body) body.classList.toggle('open', openCards[id]);
+  if (chevron) chevron.classList.toggle('open', openCards[id]);
+}
+
+function toggleTask(taskId, blockId) {
+  var t = (D.tasks||[]).find(function(t){ return t.id===taskId; });
+  if (!t) return;
+  t.done = !t.done;
+  t.doneAt = t.done ? Date.now() : null;
+  sv();
+  renderBlocks();
+  renderStrip();
+  if (openCards[blockId]) openCards[blockId] = true;
+}
+
+/* ── Block Modal ── */
+var COLORS = ['#7C6FFF','#007AFF','#34C759','#FF9500','#FF3B30','#FF2D55','#5856D6','#00C7BE','#FF6B35','#8E8E93'];
+var bmId = null;
+var bmMode = 'flexible';
+var bmColor = COLORS[0];
+var bmPinned = [];
+
+function openBlockModal(id) {
+  bmId = id;
+  var b = id ? (D.timeBlocks||[]).find(function(b){ return b.id===id; }) : null;
+  document.getElementById('bm-title').textContent = b ? 'Edit Block' : 'Add Time Block';
+  document.getElementById('bm-name').value  = b ? b.name  : '';
+  document.getElementById('bm-start').value = b ? b.start : '09:00';
+  document.getElementById('bm-end').value   = b ? b.end   : '11:00';
+  bmColor = b ? (b.color||COLORS[0]) : COLORS[0];
+  bmMode  = b ? (b.mode||'flexible') : 'flexible';
+  bmPinned = b ? (b.pinnedTaskIds||[]).slice() : [];
+  document.getElementById('bm-del').style.display = b ? '' : 'none';
+
+  /* colors */
+  var sw = document.getElementById('bm-swatches');
+  sw.innerHTML = COLORS.map(function(c){
+    return '<div class="sw'+(c===bmColor?' sel':'')+'" style="background:'+c+'" onclick="pickColor(\''+c+'\')" title="'+c+'"></div>';
+  }).join('');
+
+  /* populate selects */
+  var goalSel = document.getElementById('bm-goal');
+  goalSel.innerHTML = '<option value="">Any Goal</option>';
+  (D.goals||[]).forEach(function(g){ goalSel.innerHTML += '<option value="'+xe(g.id)+'">'+xe(g.name)+'</option>'; });
+  if (b && b.goalId) goalSel.value = b.goalId;
+
+  var catSel = document.getElementById('bm-cat');
+  catSel.innerHTML = '<option value="">Any Category</option>';
+  (D.categories||[]).forEach(function(c){ catSel.innerHTML += '<option value="'+xe(c.id)+'">'+xe(c.name)+'</option>'; });
+  if (b && b.categoryId) catSel.value = b.categoryId;
+
+  /* assignees from tasks */
+  var assSel = document.getElementById('bm-ass');
+  var assignees = [];
+  (D.tasks||[]).forEach(function(t){ if(t.assignee && assignees.indexOf(t.assignee)===-1) assignees.push(t.assignee); });
+  assSel.innerHTML = '<option value="">Any Assignee / Delegate</option>';
+  assignees.forEach(function(a){ assSel.innerHTML += '<option value="'+xe(a)+'">'+xe(a)+'</option>'; });
+  if (b && b.assignee) assSel.value = b.assignee;
+
+  setMode(bmMode);
+  document.getElementById('pin-q').value = '';
+  renderPinList();
+  document.getElementById('bmo').classList.add('open');
+}
+
+function closeBM(){ document.getElementById('bmo').classList.remove('open'); }
+
+function pickColor(c) {
+  bmColor = c;
+  document.querySelectorAll('.sw').forEach(function(s){ s.classList.toggle('sel', s.style.background===c || s.style.background===hexToRgb(c)); });
+}
+
+function hexToRgb(h) {
+  h = h.replace('#','');
+  var r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  return 'rgb('+r+', '+g+', '+b+')';
+}
+
+function setMode(m) {
+  bmMode = m;
+  document.getElementById('btn-flex').classList.toggle('active', m==='flexible');
+  document.getElementById('btn-pri').classList.toggle('active', m==='priority');
+  document.getElementById('flex-section').style.display = m==='flexible' ? '' : 'none';
+  document.getElementById('pri-section').style.display  = m==='priority' ? '' : 'none';
+  document.getElementById('mode-hint').textContent = m==='flexible'
+    ? 'Any task matching the filters below can be done in this block.'
+    : 'Only the specific tasks you pin here are allowed in this block. No distractions.';
+}
+
+function renderPinList() {
+  var q = (document.getElementById('pin-q').value||'').toLowerCase();
+  var tasks = (D.tasks||[]).filter(function(t){
+    if (t.done) return false;
+    if (q && t.title.toLowerCase().indexOf(q)===-1) return false;
+    return true;
+  });
+  var html = '';
+  tasks.forEach(function(t){
+    var sel = bmPinned.indexOf(t.id)!==-1;
+    html += '<div class="pin-row" onclick="togglePin(\''+t.id+'\')">'+
+      '<div class="pin-chk'+(sel?' sel':'')+'">'+(sel?'<i class="ti ti-check"></i>':'')+'</div>'+
+      '<div style="font-size:14px;flex:1">'+xe(t.title)+'</div>'+
+    '</div>';
+  });
+  document.getElementById('pin-list').innerHTML = html || '<div style="font-size:13px;color:var(--text2);padding:8px;text-align:center">No tasks found</div>';
+}
+
+function togglePin(id) {
+  var i = bmPinned.indexOf(id);
+  if (i===-1) bmPinned.push(id); else bmPinned.splice(i,1);
+  renderPinList();
+}
+
+function saveBM() {
+  var name = document.getElementById('bm-name').value.trim();
+  if (!name) { alert('Please enter a block name'); return; }
+  var start = document.getElementById('bm-start').value;
+  var end   = document.getElementById('bm-end').value;
+  if (toMins(end) <= toMins(start)) { alert('End time must be after start time'); return; }
+
+  if (!D.timeBlocks) D.timeBlocks = [];
+  if (bmId) {
+    var b = D.timeBlocks.find(function(b){ return b.id===bmId; });
+    if (b) {
+      b.name=name; b.start=start; b.end=end; b.color=bmColor; b.mode=bmMode;
+      b.goalId=document.getElementById('bm-goal').value||null;
+      b.categoryId=document.getElementById('bm-cat').value||null;
+      b.assignee=document.getElementById('bm-ass').value||null;
+      b.pinnedTaskIds=bmPinned.slice();
+    }
+  } else {
+    D.timeBlocks.push({
+      id:uid(), name:name, start:start, end:end, color:bmColor, mode:bmMode,
+      goalId:document.getElementById('bm-goal').value||null,
+      categoryId:document.getElementById('bm-cat').value||null,
+      assignee:document.getElementById('bm-ass').value||null,
+      pinnedTaskIds:bmPinned.slice()
+    });
+  }
+  sv(); closeBM(); render();
+}
+
+function delBlockFromModal() {
+  if (!bmId) return;
+  if (!confirm('Delete this block?')) return;
+  D.timeBlocks = (D.timeBlocks||[]).filter(function(b){ return b.id!==bmId; });
+  sv(); closeBM(); render();
+}
+
+/* ── Init ── */
+window.addEventListener('DOMContentLoaded', function(){
+  loadData();
+});
+</script>
+</body>
+</html>
