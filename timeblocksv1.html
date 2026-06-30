@@ -33,10 +33,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Segoe UI,sans-se
 /* Day strip */
 #day-strip{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .strip-label{font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
-#strip-track{position:relative;height:20px;background:#E5E5EA;border-radius:6px;overflow:hidden;margin-bottom:4px}
-.strip-seg{position:absolute;top:0;height:100%}
+#strip-track{position:relative;height:28px;background:#E5E5EA;border-radius:8px;overflow:visible;margin-bottom:6px;cursor:pointer}
+#strip-inner{position:absolute;inset:0;border-radius:8px;overflow:hidden}
+.strip-seg{
+  position:absolute;top:0;height:100%;cursor:pointer;transition:filter .15s,transform .15s;
+  transform-origin:center bottom;
+}
+.strip-seg:hover{filter:brightness(1.15);transform:scaleY(1.18)}
 #strip-hours{display:flex;justify-content:space-between}
 #strip-hours span{font-size:9px;color:var(--text2);font-weight:600}
+/* Strip tooltip */
+#strip-tip{
+  position:fixed;z-index:200;
+  background:rgba(28,28,30,.92);color:#fff;
+  border-radius:10px;padding:8px 12px;
+  font-size:13px;font-weight:600;line-height:1.4;
+  pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);
+  display:none;
+  transform:translate(-50%,-110%);
+  transition:opacity .1s;
+}
+#strip-tip::after{
+  content:'';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:rgba(28,28,30,.92);
+  border-bottom:none;
+}
+/* Current time needle */
+#time-needle{
+  position:absolute;top:-4px;width:2px;background:#FF3B30;border-radius:1px;
+  height:calc(100% + 8px);z-index:5;pointer-events:none;
+}
+#time-needle::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:8px;height:8px;border-radius:50%;background:#FF3B30;margin-top:-3px;
+}
 /* Block cards */
 .block-card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;transition:box-shadow .2s}
 .block-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -130,12 +161,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',Segoe UI,sans-se
 <div id="main">
   <div id="day-strip">
     <div class="strip-label">Today's Structure</div>
-    <div id="strip-track"></div>
+    <div id="strip-track"><div id="strip-inner"></div><div id="time-needle"></div></div>
     <div id="strip-hours">
       <span>0</span><span>3</span><span>6</span><span>9</span>
       <span>12</span><span>15</span><span>18</span><span>21</span><span>24</span>
     </div>
   </div>
+  <div id="strip-tip"></div>
   <div id="blocks-container"></div>
 </div>
 
@@ -331,19 +363,68 @@ function renderDate() {
 }
 
 function renderStrip() {
-  var track = document.getElementById('strip-track');
-  track.innerHTML = '';
+  var inner = document.getElementById('strip-inner');
+  inner.innerHTML = '';
   sortedBlocks().forEach(function(b){
     var s = toMins(b.start), e = toMins(b.end);
     if (e <= s) return;
-    var left = (s/1440*100).toFixed(2)+'%';
-    var width = ((e-s)/1440*100).toFixed(2)+'%';
+    var left = (s/1440*100).toFixed(3)+'%';
+    var width = ((e-s)/1440*100).toFixed(3)+'%';
     var seg = document.createElement('div');
     seg.className = 'strip-seg';
-    seg.style.cssText = 'left:'+left+';width:'+width+';background:'+(b.color||'#7C6FFF')+';opacity:.8';
-    seg.title = b.name+' ('+fmtTime(b.start)+' – '+fmtTime(b.end)+')';
-    track.appendChild(seg);
+    seg.style.cssText = 'left:'+left+';width:'+width+';background:'+(b.color||'#7C6FFF');
+    seg.dataset.bid = b.id;
+    seg.addEventListener('mouseenter', function(ev){ showStripTip(b, ev); });
+    seg.addEventListener('mousemove',  function(ev){ moveStripTip(ev); });
+    seg.addEventListener('mouseleave', hideStripTip);
+    seg.addEventListener('touchstart', function(ev){ showStripTip(b, ev.touches[0]); }, {passive:true});
+    seg.addEventListener('touchend', function(){ setTimeout(hideStripTip, 1200); }, {passive:true});
+    seg.addEventListener('click', function(){ scrollToBlock(b.id); });
+    inner.appendChild(seg);
   });
+  positionNeedle();
+}
+
+var _tipTimeout;
+function showStripTip(b, ev) {
+  clearTimeout(_tipTimeout);
+  var tip = document.getElementById('strip-tip');
+  var tasks = getBlockTasks(b);
+  var doneCnt = tasks.filter(function(t){return t.done;}).length;
+  var pending = tasks.length - doneCnt;
+  tip.innerHTML =
+    '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+(b.color||'#7C6FFF')+';margin-right:6px;vertical-align:middle"></span>'+
+    '<strong>'+xe(b.name)+'</strong><br>'+
+    '<span style="font-size:11px;font-weight:400;opacity:.8">'+fmtTime(b.start)+' – '+fmtTime(b.end)+'</span>'+
+    (tasks.length ? '<br><span style="font-size:11px;font-weight:400;opacity:.8">'+pending+' pending · '+doneCnt+' done</span>' : '');
+  tip.style.display = 'block';
+  moveStripTip(ev);
+}
+function moveStripTip(ev) {
+  var tip = document.getElementById('strip-tip');
+  tip.style.left = ev.clientX+'px';
+  tip.style.top  = ev.clientY+'px';
+}
+function hideStripTip() {
+  _tipTimeout = setTimeout(function(){
+    document.getElementById('strip-tip').style.display = 'none';
+  }, 80);
+}
+
+function positionNeedle() {
+  var needle = document.getElementById('time-needle');
+  if (!needle) return;
+  var now = new Date();
+  var mins = now.getHours()*60 + now.getMinutes();
+  needle.style.left = (mins/1440*100).toFixed(3)+'%';
+  needle.style.display = '';
+}
+
+function scrollToBlock(id) {
+  var el = document.getElementById('card-'+id);
+  if (!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+  if (!openCards[id]) toggleCard(id);
 }
 
 var openCards = {};
@@ -575,6 +656,7 @@ function delBlockFromModal() {
 /* ── Init ── */
 window.addEventListener('DOMContentLoaded', function(){
   loadData();
+  setInterval(positionNeedle, 60000);
 });
 </script>
 </body>
