@@ -945,6 +945,8 @@ function buildTaskSummary(){
         var ttags=tagNames(t.tags);
         var assignee=t.assignee?' → '+t.assignee:'';
         lines.push('  • '+t.title+(ttags?' ['+ttags+']':'')+(stepsTotal?' ['+stepsDone+'/'+stepsTotal+' steps]':'')+assignee);
+        if(t.target) lines.push('    🎯 Target: '+t.target);
+        if(t.preparation) lines.push('    📋 Prep: '+t.preparation);
         (t.steps||[]).forEach(function(s){
           if(s.delegated&&s.delegatedTo){
             lines.push('    ↳ delegated to '+s.delegatedTo+': '+s.text+(tagNames(s.tags)?' ['+tagNames(s.tags)+']':'')+(s.done?' ✓':''));
@@ -959,6 +961,8 @@ function buildTaskSummary(){
     standalone.forEach(function(t){
       var ttags=tagNames(t.tags);
       lines.push('  • '+t.title+(ttags?' ['+ttags+']':'')+(t.assignee?' → '+t.assignee:''));
+      if(t.target) lines.push('    🎯 Target: '+t.target);
+      if(t.preparation) lines.push('    📋 Prep: '+t.preparation);
       (t.steps||[]).forEach(function(s){
         if(s.delegated&&s.delegatedTo) lines.push('    ↳ delegated to '+s.delegatedTo+': '+s.text+(s.done?' ✓':''));
       });

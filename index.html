@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v18</title>
+<title>Chain v19</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -88,6 +88,56 @@ body{
   justify-content:center;color:#fff;font-size:15px;flex-shrink:0;
 }
 .brand-name{font-size:17px;font-weight:700;letter-spacing:-.02em}
+/* Global search */
+#gs-wrap{flex:1;position:relative;display:flex;align-items:center}
+#gs-input{
+  width:100%;height:32px;padding:0 10px 0 32px;
+  background:rgba(118,118,128,.14);border:none;border-radius:10px;
+  font-size:15px;font-family:inherit;color:var(--text1);outline:none;
+  -webkit-appearance:none;
+}
+#gs-input::placeholder{color:rgba(60,60,67,.4)}
+#gs-icon{position:absolute;left:8px;color:rgba(60,60,67,.45);font-size:16px;pointer-events:none}
+#gs-clear{position:absolute;right:6px;background:rgba(118,118,128,.35);border:none;
+  color:#fff;border-radius:50%;width:16px;height:16px;font-size:11px;line-height:1;
+  cursor:pointer;display:none;align-items:center;justify-content:center;font-weight:700}
+#gs-dropdown{
+  display:none;position:absolute;top:calc(100% + 6px);left:-8px;right:-8px;
+  background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);
+  max-height:65vh;overflow-y:auto;z-index:300;
+}
+#gs-dropdown.open{display:block}
+.gsd-section{padding:6px 0 2px}
+.gsd-sec-label{font-size:11px;font-weight:700;color:rgba(60,60,67,.5);
+  letter-spacing:.05em;text-transform:uppercase;padding:4px 14px 2px}
+.gsd-row{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.gsd-row:hover{background:rgba(0,0,0,.04)}
+.gsd-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0}
+.gsd-info{flex:1;min-width:0}
+.gsd-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsd-sub{font-size:12px;color:rgba(60,60,67,.5);margin-top:1px}
+.gsd-done{opacity:.45;text-decoration:line-through}
+.gsd-empty{padding:20px;text-align:center;color:rgba(60,60,67,.4);font-size:14px}
+/* Target/Prep tab content */
+.tp-area{display:flex;flex-direction:column;gap:10px;padding:12px 0}
+.tp-label{font-size:12px;font-weight:700;color:rgba(60,60,67,.5);letter-spacing:.04em;text-transform:uppercase}
+.tp-ta{
+  width:100%;min-height:90px;padding:10px 12px;border:1.5px solid var(--border);
+  border-radius:10px;font-size:14px;font-family:inherit;color:var(--text1);
+  resize:vertical;outline:none;line-height:1.5;
+}
+.tp-ta:focus{border-color:var(--accent)}
+.tp-manifest{border-style:dashed;border-color:rgba(124,111,255,.4);background:rgba(124,111,255,.04)}
+.tp-manifest-hint{font-size:11px;color:rgba(124,111,255,.7);margin-top:2px}
+.tp-save{
+  background:var(--accent);color:#fff;border:none;border-radius:8px;
+  padding:8px 18px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;
+  align-self:flex-start;
+}
 #badges{display:flex;gap:5px;flex:1;align-items:center}
 .badge{
   padding:2px 8px;border-radius:20px;
@@ -1152,11 +1202,16 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
 <div id="app">
   <header id="topbar">
     <div id="topbar-inner">
-      <div class="brand">
-        <div class="brand-icon"><i class="ti ti-link"></i></div>
-        <span class="brand-name">Chain</span>
+      <div class="brand-icon" style="flex-shrink:0"><i class="ti ti-link"></i></div>
+      <div id="gs-wrap">
+        <i class="ti ti-search" id="gs-icon"></i>
+        <input id="gs-input" type="search" placeholder="Search tasks, projects…" autocomplete="off" autocorrect="off" spellcheck="false"
+          oninput="gsSearch(this.value)"
+          onfocus="gsSearch(this.value)"
+          onkeydown="gsKey(event)">
+        <button id="gs-clear" onclick="gsClear()">✕</button>
+        <div id="gs-dropdown"></div>
       </div>
-      <div id="badges"></div>
       <div id="sync-dot" title="Sync status"></div>
     </div>
   </header>
@@ -1414,6 +1469,8 @@ function ensureDefaults() {
     if (!t.tags)       t.tags=[];
     if (!('goalId' in t))     t.goalId=null;
     if (!('categoryId' in t)) t.categoryId=null;
+    if (!('target' in t))     t.target='';
+    if (!('preparation' in t)) t.preparation='';
     (t.steps||[]).forEach(function(s){ if(!s.tags) s.tags=[]; });
   });
   D.projects.forEach(function(p){
@@ -2513,9 +2570,11 @@ function renderDetail() {
         '<div class="detail-pct">'+p+'%</div>'+
       '</div>'+
       '<div class="tabs">'+
-        '<button class="tab-btn'+(ctab==='steps'?' active':'')+'" onclick="setTab(\'steps\')">Steps</button>'+
-        '<button class="tab-btn'+(ctab==='notes'?' active':'')+'" onclick="setTab(\'notes\')">Notes</button>'+
-        '<button class="tab-btn'+(ctab==='log'  ?' active':'')+'" onclick="setTab(\'log\')">Log</button>'+
+        '<button class="tab-btn'+(ctab==='steps' ?' active':'')+'" onclick="setTab(\'steps\')">Steps</button>'+
+        '<button class="tab-btn'+(ctab==='notes' ?' active':'')+'" onclick="setTab(\'notes\')">Notes</button>'+
+        '<button class="tab-btn'+(ctab==='target'?' active':'')+'" onclick="setTab(\'target\')">🎯 Target</button>'+
+        '<button class="tab-btn'+(ctab==='prep'  ?' active':'')+'" onclick="setTab(\'prep\')">📋 Prep</button>'+
+        '<button class="tab-btn'+(ctab==='log'   ?' active':'')+'" onclick="setTab(\'log\')">Log</button>'+
       '</div>'+
       '<div id="tab-content"></div>'+
     '</div>';
@@ -2527,15 +2586,56 @@ function renderDetail() {
 function setTab(tab) {
   ctab=tab;
   document.querySelectorAll('.tab-btn').forEach(function(b,i){
-    b.classList.toggle('active',['steps','notes','log'][i]===tab);
+    b.classList.toggle('active',['steps','notes','target','prep','log'][i]===tab);
   });
   renderTab();
 }
 function renderTab() {
   var el=document.getElementById('tab-content'); if(!el) return;
-  if(ctab==='steps') renderSteps(el);
-  else if(ctab==='notes') renderNotes(el);
+  if(ctab==='steps')  renderSteps(el);
+  else if(ctab==='notes')  renderNotes(el);
+  else if(ctab==='target') renderTarget(el);
+  else if(ctab==='prep')   renderPrep(el);
   else renderLog(el);
+}
+function renderTarget(el) {
+  var t=gt(aid); if(!t) return;
+  el.innerHTML='<div class="tp-area">'+
+    '<div>'+
+      '<div class="tp-label">🎯 Target — Exactly What Result to Achieve</div>'+
+      '<textarea class="tp-ta" id="target-input" placeholder="Exactly what result do you want from this task? Be specific and measurable…">'+xe(t.target||'')+'</textarea>'+
+    '</div>'+
+    '<div>'+
+      '<div class="tp-label">✨ Manifestation <span style="font-weight:400;text-transform:none;letter-spacing:0;color:rgba(124,111,255,.7)">(personal, not saved)</span></div>'+
+      '<textarea class="tp-ta tp-manifest" id="manifest-input" placeholder="Visualize and write how it feels when this is achieved… (stays only in this session)"></textarea>'+
+      '<div class="tp-manifest-hint">This box is private and ephemeral — nothing here is saved or sent anywhere.</div>'+
+    '</div>'+
+    '<button class="tp-save" onclick="saveTarget()"><i class="ti ti-device-floppy"></i> Save Target</button>'+
+  '</div>';
+}
+function saveTarget() {
+  var t=gt(aid); if(!t) return;
+  t.target=(document.getElementById('target-input').value||'');
+  sv();
+  var btn=document.querySelector('.tp-save');
+  if(btn){var old=btn.innerHTML;btn.innerHTML='✓ Saved';setTimeout(function(){btn.innerHTML=old;},1500);}
+}
+function renderPrep(el) {
+  var t=gt(aid); if(!t) return;
+  el.innerHTML='<div class="tp-area">'+
+    '<div>'+
+      '<div class="tp-label">📋 Preparation — What Do You Need to Do/Arrange</div>'+
+      '<textarea class="tp-ta" id="prep-input" placeholder="List everything you need to prepare, arrange, or have ready before starting this task…" style="min-height:140px">'+xe(t.preparation||'')+'</textarea>'+
+    '</div>'+
+    '<button class="tp-save" onclick="savePrep()"><i class="ti ti-device-floppy"></i> Save Preparation</button>'+
+  '</div>';
+}
+function savePrep() {
+  var t=gt(aid); if(!t) return;
+  t.preparation=(document.getElementById('prep-input').value||'');
+  sv();
+  var btn=document.querySelector('.tp-save');
+  if(btn){var old=btn.innerHTML;btn.innerHTML='✓ Saved';setTimeout(function(){btn.innerHTML=old;},1500);}
 }
 
 function renderSteps(el) {
@@ -2867,7 +2967,8 @@ function saveNew() {
   var goalId=document.getElementById('modal-goal').value||null;
   var catId=document.getElementById('modal-cat').value||null;
   var task={id:uid(),title:name,assignee:ass,projectId:projId,dueDate:due,done:false,notes:'',
-    createdAt:new Date().toISOString(),steps:[],tags:editingTags.slice(),goalId:goalId,categoryId:catId};
+    createdAt:new Date().toISOString(),steps:[],tags:editingTags.slice(),goalId:goalId,categoryId:catId,
+    target:'',preparation:''};
   D.tasks.unshift(task);aid=task.id;ctab='steps';
   lg('Task created: "'+name+'"');
   sv();closeModal();render();
@@ -2959,6 +3060,142 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
   render();
   if (navigator.onLine) startRealtime();
 })();
+
+/* ── Global Search ────────────────────────────────────────── */
+var _gsIdx = -1;
+var _gsResults = [];
+
+function gsSearch(q) {
+  var clearBtn = document.getElementById('gs-clear');
+  if (clearBtn) clearBtn.style.display = q ? 'flex' : 'none';
+  if (!q || q.trim().length < 1) { gsHide(); return; }
+  q = q.toLowerCase().trim();
+  _gsResults = [];
+  _gsIdx = -1;
+
+  /* Tasks */
+  (D.tasks||[]).forEach(function(t) {
+    var score = 0;
+    if (t.title.toLowerCase().indexOf(q) !== -1) score += 3;
+    if ((t.notes||'').toLowerCase().indexOf(q) !== -1) score += 1;
+    if ((t.assignee||'').toLowerCase().indexOf(q) !== -1) score += 1;
+    if ((t.target||'').toLowerCase().indexOf(q) !== -1) score += 2;
+    if ((t.preparation||'').toLowerCase().indexOf(q) !== -1) score += 1;
+    (t.steps||[]).forEach(function(s){
+      if ((s.text||'').toLowerCase().indexOf(q) !== -1) score += 1;
+    });
+    if (score > 0) _gsResults.push({type:'task', item:t, score:score});
+  });
+
+  /* Projects */
+  (D.projects||[]).forEach(function(p) {
+    if (p.name.toLowerCase().indexOf(q) !== -1)
+      _gsResults.push({type:'project', item:p, score:3});
+  });
+
+  _gsResults.sort(function(a,b){ return b.score - a.score; });
+
+  var tasks = _gsResults.filter(function(r){return r.type==='task';}).slice(0,8);
+  var projs  = _gsResults.filter(function(r){return r.type==='project';}).slice(0,4);
+
+  var html = '';
+  if (!tasks.length && !projs.length) {
+    html = '<div class="gsd-empty">No results for "'+xe(q)+'"</div>';
+  } else {
+    if (tasks.length) {
+      html += '<div class="gsd-section"><div class="gsd-sec-label">Tasks</div>';
+      tasks.forEach(function(r, i) {
+        var t = r.item;
+        var proj = t.projectId ? gp(t.projectId) : null;
+        var dotColor = proj ? proj.color : '#8E8E93';
+        html += '<div class="gsd-row'+(t.done?' gsd-done':'')+'" onclick="gsSelectTask(\''+t.id+'\')" data-gi="'+i+'">'+
+          '<div class="gsd-icon" style="background:'+dotColor+'22">'+
+            '<i class="ti ti-'+(t.done?'circle-check':'circle')+'" style="color:'+dotColor+'"></i>'+
+          '</div>'+
+          '<div class="gsd-info">'+
+            '<div class="gsd-title">'+xe(t.title)+'</div>'+
+            (proj ? '<div class="gsd-sub">'+xe(proj.name)+'</div>' : (t.assignee?'<div class="gsd-sub">@'+xe(t.assignee)+'</div>':''))+
+          '</div>'+
+        '</div>';
+      });
+      html += '</div>';
+    }
+    if (projs.length) {
+      html += '<div class="gsd-section"><div class="gsd-sec-label">Projects</div>';
+      projs.forEach(function(r) {
+        var p = r.item;
+        html += '<div class="gsd-row" onclick="gsSelectProject(\''+p.id+'\')">'+
+          '<div class="gsd-icon" style="background:'+p.color+'33"><i class="ti ti-folder" style="color:'+p.color+'"></i></div>'+
+          '<div class="gsd-info"><div class="gsd-title">'+xe(p.name)+'</div></div>'+
+        '</div>';
+      });
+      html += '</div>';
+    }
+  }
+
+  var dd = document.getElementById('gs-dropdown');
+  dd.innerHTML = html;
+  dd.classList.add('open');
+}
+
+function gsHide() {
+  var dd = document.getElementById('gs-dropdown');
+  if (dd) { dd.classList.remove('open'); dd.innerHTML = ''; }
+  _gsIdx = -1;
+}
+
+function gsClear() {
+  var inp = document.getElementById('gs-input');
+  if (inp) { inp.value = ''; inp.focus(); }
+  document.getElementById('gs-clear').style.display = 'none';
+  gsHide();
+}
+
+function gsSelectTask(id) {
+  aid = id; viewProjId = null; ctab = 'steps';
+  gsHide();
+  document.getElementById('gs-input').blur();
+  document.getElementById('gs-input').value = '';
+  document.getElementById('gs-clear').style.display = 'none';
+  renderDetail(); renderList();
+  if (isMob()) document.body.classList.add('mob-detail');
+}
+
+function gsSelectProject(id) {
+  viewProjId = id; aid = null;
+  gsHide();
+  document.getElementById('gs-input').blur();
+  document.getElementById('gs-input').value = '';
+  document.getElementById('gs-clear').style.display = 'none';
+  renderDetail(); renderList();
+  if (isMob()) document.body.classList.add('mob-detail');
+}
+
+function gsKey(e) {
+  var dd = document.getElementById('gs-dropdown');
+  if (!dd.classList.contains('open')) return;
+  var rows = dd.querySelectorAll('.gsd-row');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _gsIdx = Math.min(_gsIdx + 1, rows.length - 1);
+    rows.forEach(function(r,i){ r.classList.toggle('active', i===_gsIdx); });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _gsIdx = Math.max(_gsIdx - 1, -1);
+    rows.forEach(function(r,i){ r.classList.toggle('active', i===_gsIdx); });
+  } else if (e.key === 'Enter' && _gsIdx >= 0) {
+    e.preventDefault();
+    rows[_gsIdx] && rows[_gsIdx].click();
+  } else if (e.key === 'Escape') {
+    gsHide();
+    document.getElementById('gs-input').blur();
+  }
+}
+
+/* Close dropdown when clicking outside */
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('gs-wrap').contains(e.target)) gsHide();
+});
 </script>
 </body>
 </html>
