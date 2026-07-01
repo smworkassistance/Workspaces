@@ -1313,6 +1313,7 @@ async function sendMsg(){
   var input = document.getElementById('chat-input');
   var txt   = input.value.trim();
   if(!txt) return;
+  if(_empUrlPid && taskData && taskData.aiSettings && taskData.aiSettings.empAiEnabled===false) return;
 
   input.value=''; input.style.height='auto';
   document.getElementById('send-btn').disabled=true;
@@ -1549,6 +1550,11 @@ async function boot(){
     msgsEl.innerHTML='';
     chatLog.forEach(function(m){_appendMsgRaw(m.role,m.content,m.time);});
     msgsEl.scrollTop=999999;
+    // Enforce disable even when restoring session
+    if(_empUrlPid && taskData && taskData.aiSettings && taskData.aiSettings.empAiEnabled===false){
+      document.getElementById('chat-input').disabled=true;
+      document.getElementById('send-btn').disabled=true;
+    }
   } else {
     currentSessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
     /* Build welcome message — filter counts for employee mode */
@@ -1560,7 +1566,7 @@ async function boot(){
       msgsEl.innerHTML='<div class="msg-wrap ai"><div class="msg-ai-label">Chain AI</div>'+
         '<div class="msg-bubble">🔒 AI assistant is currently disabled by your manager.</div>'+
         '<div class="msg-time">'+ts()+'</div></div>';
-      document.getElementById('inp').disabled=true;
+      document.getElementById('chat-input').disabled=true;
       document.getElementById('send-btn').disabled=true;
     } else {
       var _bootActiveTasks;
