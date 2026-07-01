@@ -1195,6 +1195,18 @@ function describeAction(a){
 }
 
 function openChainRef(type, name){
+  if(delegatePid){
+    // Employee mode — find task by name, open in delegate.html
+    var url='delegate.html?pid='+delegatePid;
+    if(type==='task'&&taskData){
+      var match=(taskData.tasks||[]).find(function(t){
+        return t.title&&t.title.toLowerCase()===name.toLowerCase();
+      });
+      if(match)url+='&openTask='+encodeURIComponent(match.id);
+    }
+    window.open(url,'_blank');
+    return;
+  }
   localStorage.setItem('chain_open_request', JSON.stringify({type:type,name:name}));
   window.open('chain.html','_blank');
 }

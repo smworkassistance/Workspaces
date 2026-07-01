@@ -284,6 +284,9 @@ function startRealtime(){
     renderAll();
     updateNotifBadge();
     if(navigator.onLine)startRealtime();
+    // Auto-open task from AI link
+    var _autoTask=params.get('openTask');
+    if(_autoTask)setTimeout(function(){openTaskById(_autoTask);},400);
   }catch(err){showError('Something went wrong. Please refresh.');}
 })();
 
