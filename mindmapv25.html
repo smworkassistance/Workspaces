@@ -1576,6 +1576,24 @@ window.addEventListener('DOMContentLoaded',function(){
   var dpid=new URLSearchParams(window.location.search).get('pid');
   if(!dpid)return;
   sessionStorage.setItem('chain_delegate_pid',dpid);
+  try{
+    var D2=JSON.parse(localStorage.getItem('chain_local_v1')||'{}');
+    var emp=(D2.people||[]).find(function(p){return p.id===dpid;});
+    if(emp){
+      var hdr=document.querySelector('#topbar,header,[class*="topbar"]');
+      if(hdr){
+        var chip=document.createElement('div');
+        chip.style.cssText='display:inline-flex;align-items:center;gap:5px;background:'+(emp.color||'#6B5FFF')+';border-radius:20px;padding:3px 8px 3px 4px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0;margin-left:auto';
+        var av=document.createElement('div');
+        av.style.cssText='width:18px;height:18px;border-radius:9px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800';
+        av.textContent=(emp.name||'?').charAt(0).toUpperCase();
+        var nm=document.createElement('span');nm.textContent=emp.name||'';
+        chip.appendChild(av);chip.appendChild(nm);
+        hdr.style.display='flex';hdr.style.alignItems='center';
+        hdr.appendChild(chip);
+      }
+    }
+  }catch(e){}
   var nav=document.getElementById('bottom-nav');
   if(!nav)return;
   nav.innerHTML=

@@ -16,7 +16,7 @@
   --font:-apple-system,'Helvetica Neue',sans-serif;
   --safe-bottom:env(safe-area-inset-bottom,0px);--safe-top:env(safe-area-inset-top,0px);
 }
-body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100dvh;padding-bottom:calc(68px + var(--safe-bottom));}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100dvh;padding-top:calc(var(--safe-top)+52px);padding-bottom:calc(68px + var(--safe-bottom));}
 
 /* Topbar */
 #topbar{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(255,255,255,.95);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--border);padding:calc(var(--safe-top)+8px) 14px 8px;display:flex;align-items:center;gap:10px}
@@ -27,7 +27,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 #notif-badge{display:none;position:absolute;top:-1px;right:-1px;min-width:16px;height:16px;background:var(--red);color:#fff;border-radius:8px;font-size:10px;font-weight:700;line-height:16px;text-align:center;padding:0 3px}
 
 /* Stats */
-#stats-wrap{position:sticky;top:calc(var(--safe-top)+52px);z-index:100;background:var(--bg);padding-top:calc(var(--safe-top)+52px)}
+#stats-wrap{position:sticky;top:calc(var(--safe-top)+52px);z-index:100;background:var(--bg)}
 #stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 12px 6px}
 .stat-card{background:var(--surface);border-radius:12px;padding:10px 12px;text-align:center;border:.5px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .stat-val{font-size:22px;font-weight:800;line-height:1}
@@ -40,7 +40,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .search-icon{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;pointer-events:none}
 
 /* Content */
-#content{padding-top:calc(var(--safe-top)+52px + 110px)}
+#content{padding-top:4px}
 
 /* Bottom nav */
 #botnav{position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(255,255,255,.95);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--border);padding:8px 0 calc(var(--safe-bottom)+4px);display:grid;grid-template-columns:repeat(4,1fr)}
@@ -400,14 +400,22 @@ function taskCard(t,color){
   if(t.dueDate)meta+='<span class="tr-chip"><i class="ti ti-calendar-event" style="font-size:11px"></i>'+xe(t.dueDate)+'</span>';
   if(steps.length)meta+='<span class="tr-chip"><i class="ti ti-check" style="font-size:11px"></i>'+doneS+'/'+steps.length+'</span>';
   if(cmts)meta+='<span class="tr-chip">💬 '+cmts+'</span>';
-  if(t.assignedPersonId&&t.assignedPersonId!==pid){
-    var who=t.assignedPersonId==='owner'?'Manager':((D.people||[]).find(function(p){return p.id===t.assignedPersonId;})||{}).name||'';
-    if(who)meta+='<span class="tr-chip" style="color:'+color+'">→ '+xe(who)+'</span>';
+  // Delegated to me: show who assigned
+  if(t.createdBy&&t.createdBy!=='owner'&&t.createdBy!==pid){
+    var dl=(D.people||[]).find(function(p){return p.id===t.createdBy;});
+    if(dl)meta+='<span class="tr-chip" style="color:'+color+'">👤 '+xe(dl.name)+'</span>';
   }
+  // Delegated by me: show target person
+  if(t.createdBy===pid&&t.assignedPersonId&&t.assignedPersonId!==pid){
+    var to=(D.people||[]).find(function(p){return p.id===t.assignedPersonId;});
+    if(to)meta+='<span class="tr-chip" style="color:'+color+'">→ '+xe(to.name)+'</span>';
+  }
+  // Date
+  if(t.createdAt){var _d=new Date(t.createdAt);meta+='<span class="tr-chip" style="color:var(--muted)">'+_d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+'</span>';}
   return '<div class="task-row'+(t.done?' tr-done':'')+'" style="border-left-color:'+color+'">'+
     '<div class="tr-inner" onclick="toggleTask(\''+t.id+'\')">'+
       '<div class="tr-main">'+
-        '<div class="tr-title'+(t.done?' done':'\'')+'">'+xe(t.title)+'</div>'+
+        '<div class="tr-title'+(t.done?' done':'')+'" style="text-decoration:'+(t.done?'line-through':'none')+'">'+xe(t.title)+'</div>'+
         (meta?'<div class="tr-meta">'+meta+'</div>':'')+
         (steps.length?'<div class="tr-prog-wrap"><div class="tr-prog-fill" style="width:'+pct+'%;background:'+color+'"></div></div>':'')+
       '</div>'+
