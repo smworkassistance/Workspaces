@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v25</title>
+<title>Chain v26</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -1289,7 +1289,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
 .perf-task-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .ppl-card-clickable{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .ppl-card-clickable:active{background:rgba(124,111,255,.04)}
-#perf-overlay{position:fixed;inset:0;z-index:500;display:none;background:rgba(0,0,0,.35)}
+#perf-overlay{position:fixed;inset:0;z-index:500;display:none;background:rgba(0,0,0,.35);transition:background .25s}
 #perf-overlay.open{display:block}
 #perf-overlay.open #perf-sheet{transform:translateX(0)}
 /* Hierarchy people cards inside biz blocks */
@@ -1393,6 +1393,20 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
     <div id="perf-tasks"></div>
     <button id="perf-assign-btn" onclick="closePerfPanel();openModalForPerson(_perfPid)" style="margin-top:16px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent"><i class="ti ti-plus"></i> Assign Task</button>
     <button onclick="copyPersonLinkFromPerf()" style="margin-top:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);border:1.5px solid rgba(124,111,255,.3);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">🔗 Copy Employee Link</button>
+  </div>
+</div>
+
+<!-- Assign Person to Business Sheet -->
+<div id="assign-biz-overlay" onclick="if(event.target===this)closeAssignBiz()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:620;display:none;align-items:flex-end">
+  <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(env(safe-area-inset-bottom,0px)+20px);width:100%;max-height:80dvh;overflow-y:auto;animation:slideUp .22s ease">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:17px;font-weight:700;flex:1" id="assign-biz-title">Add to Business</span>
+      <button onclick="closeAssignBiz()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="assign-biz-list"></div>
+    <div style="margin-top:12px;border-top:.5px solid var(--border);padding-top:12px">
+      <button onclick="closeAssignBiz();openPModal()" style="width:100%;padding:12px;border-radius:10px;background:var(--surface2);border:none;font-size:14px;font-weight:600;cursor:pointer"><i class="ti ti-user-plus"></i> Create New Person</button>
+    </div>
   </div>
 </div>
 
@@ -2212,24 +2226,61 @@ function deleteDept(deptId){
   sv();renderList();
 }
 
+var _assignBizId=null;
+var _assignDeptId=null;
+
+function openAssignToBiz(bizId,deptId){
+  _assignBizId=bizId;
+  _assignDeptId=deptId||null;
+  var biz=(D.businesses||[]).find(function(b){return b.id===bizId;});
+  var dept=deptId?(D.departments||[]).find(function(d){return d.id===deptId;}):null;
+  var title='Add to '+(biz?xe(biz.name):'Business')+(dept?' › '+xe(dept.name):'');
+  document.getElementById('assign-biz-title').innerHTML=title;
+  var people=D.people||[];
+  var existing=people.filter(function(p){
+    if(deptId)return p.deptId!==deptId;
+    return p.bizId!==bizId;
+  });
+  var bc=biz?(biz.color||'var(--accent)'):'var(--accent)';
+  var list=document.getElementById('assign-biz-list');
+  if(!existing.length){
+    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><i class="ti ti-users" style="font-size:28px;opacity:.4;display:block;margin-bottom:8px"></i>No other people to assign.<br>Create a new person below.</div>';
+  } else {
+    list.innerHTML=existing.map(function(p){
+      var pbc=p.color||'#7C6FFF';
+      var curBiz=p.bizId?(((D.businesses||[]).find(function(b){return b.id===p.bizId;})||{}).name||'other'):null;
+      var subtitle=(p.role||'')+((p.role&&curBiz)?' · ':'')+( curBiz?'Currently: '+curBiz:'No business');
+      return '<div onclick="assignPersonToBiz(\''+p.id+'\')" style="display:flex;align-items:center;gap:12px;padding:11px 12px;margin-bottom:6px;background:var(--surface2);border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent">'+
+        '<div style="width:38px;height:38px;border-radius:19px;background:'+pbc+';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0">'+xe((p.name||'?').charAt(0).toUpperCase())+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-weight:600;font-size:14px;color:var(--text)">'+xe(p.name)+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:1px">'+xe(subtitle)+'</div>'+
+        '</div>'+
+        '<div style="width:28px;height:28px;border-radius:14px;background:'+bc+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
+          '<i class="ti ti-plus" style="color:#fff;font-size:14px"></i>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('assign-biz-overlay').style.display='flex';
+}
+
+function closeAssignBiz(){document.getElementById('assign-biz-overlay').style.display='none';}
+
+function assignPersonToBiz(personId){
+  var p=(D.people||[]).find(function(x){return x.id===personId;});
+  if(!p||!_assignBizId)return;
+  p.bizId=_assignBizId;
+  if(_assignDeptId)p.deptId=_assignDeptId;
+  sv();closeAssignBiz();renderList();
+}
+
 function openPModalWithBiz(bizId){
-  openPModal();
-  setTimeout(function(){
-    var s=document.getElementById('p-biz');
-    if(s){s.value=bizId;if(typeof onPBizChange==='function')onPBizChange();}
-  },120);
+  openAssignToBiz(bizId,null);
 }
 
 function openPModalWithBizDept(bizId,deptId){
-  openPModal();
-  setTimeout(function(){
-    var s=document.getElementById('p-biz');
-    if(s){s.value=bizId;if(typeof onPBizChange==='function')onPBizChange();}
-    setTimeout(function(){
-      var d=document.getElementById('p-dept-sel');
-      if(d)d.value=deptId;
-    },80);
-  },120);
+  openAssignToBiz(bizId,deptId);
 }
 
 function openModalForPerson(personId){
@@ -3889,9 +3940,13 @@ function openPersonPerf(pid){
   var changed2=false;
   (D.notifications||[]).forEach(function(n){if(n.toId==='owner'&&n.fromPid===pid&&!(n.readBy||[]).includes('owner')){n.readBy.push('owner');changed2=true;}});
   if(changed2){sv();updateNotifBadge();renderPeopleView&&document.getElementById('task-list')&&(currentMode==='people')&&renderList();}
-  document.getElementById('perf-overlay').classList.add('open');
+  var _po=document.getElementById('perf-overlay');
+  if(_po){_po.style.display='block';requestAnimationFrame(function(){_po.classList.add('open');});}
 }
-function closePerfPanel(){document.getElementById('perf-overlay').classList.remove('open');}
+function closePerfPanel(){
+  var _po=document.getElementById('perf-overlay');
+  if(_po){_po.classList.remove('open');setTimeout(function(){_po.style.display='none';},300);}
+}
 function copyPersonLinkFromPerf(){
   if(!_perfPid)return;
   copyPersonLink(_perfPid);
@@ -3923,7 +3978,17 @@ function saveAiSettings(){
   var knob=document.getElementById('ai-toggle-knob');
   track.style.background=on?'var(--accent)':'var(--border)';
   knob.style.left=on?'22px':'2px';
-  sv();
+  sv();showToast('AI settings saved');
+}
+function showToast(msg){
+  var t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;animation:fadeInOut 2.5s ease forwards';
+  var style=document.createElement('style');
+  style.textContent='@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(8px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}';
+  document.head.appendChild(style);
+  document.body.appendChild(t);
+  setTimeout(function(){t.remove();},2600);
 }
 
 /* Close dropdown when clicking outside */

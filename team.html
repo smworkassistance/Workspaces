@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F2F2F7">
+<title>Team Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F2F2F7;--surface:#FFFFFF;--surface2:#E8E8EE;--border:rgba(60,60,67,.13);
+  --text:#1C1C1E;--muted:#8E8E93;--accent:#6B5FFF;
+  --font:-apple-system,'Helvetica Neue',sans-serif;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100dvh;padding-top:calc(var(--safe-top) + 60px);padding-bottom:calc(24px + var(--safe-bottom))}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--border);padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;align-items:center;gap:10px}
+#topbar-logo{width:34px;height:34px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;letter-spacing:-.5px;flex-shrink:0}
+#topbar-title{font-size:17px;font-weight:700;flex:1}
+#topbar-sub{font-size:12px;color:var(--muted);flex:1;margin-top:1px}
+.search-wrap{padding:10px 14px 6px;position:relative}
+.search-inp{width:100%;background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:9px 12px 9px 36px;color:var(--text);font-size:14px;font-family:var(--font);outline:none}
+.search-inp:focus{border-color:rgba(107,95,255,.4)}
+.search-icon{position:absolute;left:24px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;pointer-events:none}
+.biz-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:12px 14px 6px;display:flex;align-items:center;gap:8px}
+.biz-label-dot{width:8px;height:8px;border-radius:4px;flex-shrink:0}
+.person-card{display:flex;align-items:center;gap:14px;padding:13px 14px;margin:2px 10px;background:var(--surface);border-radius:13px;border:.5px solid var(--border);cursor:pointer;transition:background .12s;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.person-card:active{background:rgba(107,95,255,.06)}
+.person-av{width:46px;height:46px;border-radius:23px;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:#fff;flex-shrink:0}
+.person-name{font-size:15px;font-weight:700;color:var(--text)}
+.person-role{font-size:12px;color:var(--muted);margin-top:2px}
+.person-tc{font-size:11px;font-weight:600;color:var(--accent);margin-top:3px}
+.person-chev{color:var(--muted);font-size:18px;margin-left:auto;opacity:.5}
+.msg-center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50dvh;gap:12px;color:var(--muted);text-align:center;padding:20px}
+.spinning{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div id="topbar-logo">C</div>
+  <div style="flex:1;min-width:0">
+    <div id="topbar-title">Team Portal</div>
+    <div id="topbar-sub">Select your name to open your tasks</div>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <span class="search-icon"><i class="ti ti-search"></i></span>
+  <input class="search-inp" id="search-inp" placeholder="Search your name…" autocomplete="off" oninput="render()">
+</div>
+
+<div id="content">
+  <div class="msg-center">
+    <i class="ti ti-loader spinning" style="font-size:32px"></i>
+    <p>Loading team…</p>
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL='https://ienfjretjvoupzwncnjb.supabase.co';
+var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllbmZqcmV0anZvdXB6d25jbmpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTU4NjcsImV4cCI6MjA5NzM3MTg2N30.zItQB5JjKGaM2gGR4eJWBGX4WGgvc1CEYG9Z1I7yU2A';
+var LOCAL_KEY='chain_local_v1';
+var db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+var D={};
+
+function xe(s){var d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
+
+(async function(){
+  var local=localStorage.getItem(LOCAL_KEY);
+  if(local){try{D=JSON.parse(local);}catch(e){}}
+  try{
+    var r=await db.from('chain_state').select('data').eq('id','main').maybeSingle();
+    if(r.data&&r.data.data){D=r.data.data;localStorage.setItem(LOCAL_KEY,JSON.stringify(D));}
+  }catch(e){}
+  var biz=(D.businesses||[]);
+  if(biz.length){
+    var b=biz[0];
+    document.getElementById('topbar-title').textContent=xe(b.name)+' Portal';
+  }
+  render();
+})();
+
+function render(){
+  var q=(document.getElementById('search-inp').value||'').toLowerCase().trim();
+  var people=(D.people||[]).filter(function(p){
+    return !q||(p.name||'').toLowerCase().indexOf(q)!==-1;
+  });
+  if(!people.length){
+    document.getElementById('content').innerHTML=
+      '<div class="msg-center"><i class="ti ti-users" style="font-size:40px;opacity:.3"></i>'+
+      '<p>'+(q?'No match for "'+xe(q)+'"':'No team members found.<br><small>Ask your manager for the correct link.</small>')+'</p></div>';
+    return;
+  }
+  var businesses=D.businesses||[];
+  var departments=D.departments||[];
+  var tasks=D.tasks||[];
+  var html='';
+
+  if(businesses.length){
+    businesses.forEach(function(biz){
+      var bizPeople=people.filter(function(p){return p.bizId===biz.id;});
+      if(!bizPeople.length)return;
+      html+='<div class="biz-label"><div class="biz-label-dot" style="background:'+(biz.color||'var(--accent)')+'"></div>'+xe(biz.name)+'</div>';
+      bizPeople.forEach(function(p){html+=personCard(p,tasks,departments);});
+    });
+  }
+
+  var noBiz=people.filter(function(p){return !p.bizId;});
+  if(noBiz.length){
+    if(businesses.length) html+='<div class="biz-label">Other</div>';
+    noBiz.forEach(function(p){html+=personCard(p,tasks,departments);});
+  }
+
+  document.getElementById('content').innerHTML=html;
+}
+
+function personCard(p,tasks,departments){
+  var tc=(tasks||[]).filter(function(t){return t.assignedPersonId===p.id&&!t.done;}).length;
+  var dept=(departments||[]).find(function(d){return d.id===p.deptId;});
+  var sub=[p.role,dept&&dept.name].filter(Boolean).join(' · ');
+  return '<div class="person-card" onclick="goTo(\''+p.id+'\')">'+
+    '<div class="person-av" style="background:'+(p.color||'#7C6FFF')+'">'+xe((p.name||'?').charAt(0).toUpperCase())+'</div>'+
+    '<div style="flex:1;min-width:0">'+
+      '<div class="person-name">'+xe(p.name)+'</div>'+
+      (sub?'<div class="person-role">'+xe(sub)+'</div>':'')+
+      (tc?'<div class="person-tc">'+tc+' active task'+(tc>1?'s':'')+'</div>':'')+
+    '</div>'+
+    '<i class="ti ti-chevron-right person-chev"></i>'+
+  '</div>';
+}
+
+function goTo(personId){
+  sessionStorage.setItem('chain_delegate_pid',personId);
+  window.location.href='delegate.html?pid='+personId;
+}
+</script>
+</body>
+</html>
