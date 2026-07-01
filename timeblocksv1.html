@@ -322,12 +322,25 @@ function fmtTime(hhmm) {
   return hh + (m?':'+String(m).padStart(2,'0'):'') + ' ' + ap;
 }
 
+/* Employee mode: read from sessionStorage (per-tab, no cross-tab leak) */
+var _empPid = sessionStorage.getItem('chain_delegate_pid')||'';
+
 function sortedBlocks() {
-  return (D.timeBlocks||[]).slice().sort(function(a,b){ return toMins(a.start)-toMins(b.start); });
+  var all=(D.timeBlocks||[]).slice();
+  if(_empPid){
+    all=all.filter(function(b){return b.personId===_empPid;});
+  } else {
+    all=all.filter(function(b){return !b.personId;});
+  }
+  return all.sort(function(a,b){ return toMins(a.start)-toMins(b.start); });
 }
 
 function getBlockTasks(block) {
-  var all = (D.tasks||[]).filter(function(t){ return !t.done; });
+  var all = (D.tasks||[]).filter(function(t){
+    if(t.done)return false;
+    if(_empPid) return t.assignedPersonId===_empPid||(t.isPersonal&&t.personalOwnerId===_empPid);
+    return t.createdBy==='owner'||t.assignedPersonId==='owner'||!t.createdBy;
+  });
   if (block.mode === 'priority') {
     var ids = block.pinnedTaskIds||[];
     return ids.map(function(id){ return D.tasks.find(function(t){ return t.id===id; }); }).filter(Boolean);
@@ -640,7 +653,8 @@ function saveBM() {
       goalId:document.getElementById('bm-goal').value||null,
       categoryId:document.getElementById('bm-cat').value||null,
       assignee:document.getElementById('bm-ass').value||null,
-      pinnedTaskIds:bmPinned.slice()
+      pinnedTaskIds:bmPinned.slice(),
+      personId:_empPid||null
     });
   }
   sv(); closeBM(); render();

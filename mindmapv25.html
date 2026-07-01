@@ -1335,8 +1335,8 @@ var WORKER_URL = 'https://chain.smworkassistance.workers.dev/';
 async function callGemini(userMessage){
   var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
 
-  /* ── Employee mode check ────────────────────────────────── */
-  var delegatePid = localStorage.getItem('chain_delegate_pid');
+  /* ── Employee mode check (sessionStorage = per-tab, no cross-tab leak) ── */
+  var delegatePid = sessionStorage.getItem('chain_delegate_pid');
   var isEmployee = !!delegatePid;
   var empPerson = isEmployee && taskData ? (taskData.people||[]).find(function(p){return p.id===delegatePid;}) : null;
   var empName = empPerson ? empPerson.name : 'Team Member';

@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v22</title>
+<title>Chain v23</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -1292,6 +1292,8 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
 #perf-overlay{position:fixed;inset:0;z-index:500;display:none;background:rgba(0,0,0,.35)}
 #perf-overlay.open{display:block}
 #perf-overlay.open #perf-sheet{transform:translateX(0)}
+/* Hierarchy people cards inside biz blocks */
+.ppl-biz-block .ppl-card{margin:2px 0;border-radius:10px}
 </style>
 </head>
 <body>
@@ -1596,23 +1598,28 @@ function ensureDefaults() {
   if (!D.goals)      D.goals      = [];
   if (!D.categories) D.categories = DEFAULT_CATEGORIES.map(function(c){return{id:c.id,name:c.name,color:c.color};});
   if (!D.tags)       D.tags       = DEFAULT_TAGS.map(function(t){return{id:t.id,name:t.name,color:t.color};});
-  if (!D.timeBlocks)   D.timeBlocks   = [];
-  if (!D.businesses)   D.businesses   = [];
-  if (!D.people)       D.people       = [];
+  if (!D.timeBlocks)    D.timeBlocks    = [];
+  if (!D.businesses)    D.businesses    = [];
+  if (!D.departments)   D.departments   = [];
+  if (!D.people)        D.people        = [];
   if (!D.notifications) D.notifications = [];
   if (!('currentBizId' in D)) D.currentBizId = null;
   D.tasks.forEach(function(t){
     if (!t.tags)       t.tags=[];
-    if (!('goalId' in t))         t.goalId=null;
-    if (!('categoryId' in t))     t.categoryId=null;
-    if (!('target' in t))         t.target='';
-    if (!('preparation' in t))    t.preparation='';
+    if (!('goalId' in t))          t.goalId=null;
+    if (!('categoryId' in t))      t.categoryId=null;
+    if (!('target' in t))          t.target='';
+    if (!('preparation' in t))     t.preparation='';
     if (!('assignedPersonId' in t)) t.assignedPersonId=null;
-    if (!t.comments)              t.comments=[];
-    if (!('bizId' in t))          t.bizId=null;
-    if (!('isPersonal' in t))     t.isPersonal=false;
+    if (!t.comments)               t.comments=[];
+    if (!('bizId' in t))           t.bizId=null;
+    if (!('isPersonal' in t))      t.isPersonal=false;
     if (!('personalOwnerId' in t)) t.personalOwnerId=null;
+    if (!('createdBy' in t))       t.createdBy='owner';
     (t.steps||[]).forEach(function(s){ if(!s.tags) s.tags=[]; });
+  });
+  D.people.forEach(function(p){
+    if (!('deptId' in p)) p.deptId=null;
   });
   D.projects.forEach(function(p){
     if (!p.tags)             p.tags=[];
@@ -2029,32 +2036,56 @@ function renderPeopleView(el) {
     html += '<div class="empty-st"><i class="ti ti-users"></i><p>No team members yet.<br>Add people to delegate tasks<br>and share their task link.</p></div>';
     el.innerHTML = html; return;
   }
-  var byDept = {};
-  people.forEach(function(p){
-    var d = p.dept||'General';
-    if (!byDept[d]) byDept[d] = [];
-    byDept[d].push(p);
-  });
-  Object.keys(byDept).sort().forEach(function(dept){
-    html += '<div class="ppl-dept-lbl">'+xe(dept)+'</div>';
-    byDept[dept].forEach(function(p){
-      var tc = tasks.filter(function(t){return t.assignedPersonId===p.id&&!t.done;}).length;
-      var biz = (D.businesses||[]).find(function(b){return b.id===p.bizId;});
-      var unread=(D.notifications||[]).filter(function(n){return n.toId==='owner'&&n.fromPid===p.id&&!(n.readBy||[]).includes('owner');}).length;
-      html += '<div class="ppl-card ppl-card-clickable" onclick="openPersonPerf(\''+p.id+'\')">'+
-        '<div class="ppl-av" style="background:'+(p.color||'#7C6FFF')+'">'+xe((p.name||'?').charAt(0).toUpperCase())+'</div>'+
-        '<div class="ppl-info">'+
-          '<div class="ppl-name">'+xe(p.name)+(unread?'<span style="display:inline-block;margin-left:6px;min-width:18px;height:18px;background:var(--red);color:#fff;border-radius:9px;font-size:10px;font-weight:700;line-height:18px;text-align:center;padding:0 4px">'+unread+'</span>':'')+'</div>'+
-          '<div class="ppl-role">'+(p.role?xe(p.role):'—')+(biz?' · <span style="color:'+biz.color+'">'+xe(biz.name)+'</span>':'')+'</div>'+
-          (tc?'<div class="ppl-tc">'+tc+' active task'+(tc>1?'s':'')+'</div>':'')+
-        '</div>'+
-        '<div class="ppl-acts">'+
-          '<button class="ppl-link-btn" onclick="event.stopPropagation();copyPersonLink(\''+p.id+'\')">🔗</button>'+
-          '<button class="ppl-edit-btn" onclick="event.stopPropagation();openPModal(\''+p.id+'\')"><i class="ti ti-edit"></i></button>'+
-        '</div>'+
-      '</div>';
+  /* Build hierarchy: Business → Dept → Person */
+  var businesses=D.businesses||[];
+  var departments=D.departments||[];
+
+  function personCard(p){
+    var tc=tasks.filter(function(t){return t.assignedPersonId===p.id&&!t.done;}).length;
+    var unread=(D.notifications||[]).filter(function(n){return n.toId==='owner'&&n.fromPid===p.id&&!(n.readBy||[]).includes('owner');}).length;
+    return '<div class="ppl-card ppl-card-clickable" onclick="openPersonPerf(\''+p.id+'\')">'+
+      '<div class="ppl-av" style="background:'+(p.color||'#7C6FFF')+'">'+xe((p.name||'?').charAt(0).toUpperCase())+'</div>'+
+      '<div class="ppl-info">'+
+        '<div class="ppl-name">'+xe(p.name)+(unread?'<span style="display:inline-block;margin-left:6px;min-width:18px;height:18px;background:var(--red);color:#fff;border-radius:9px;font-size:10px;font-weight:700;line-height:18px;text-align:center;padding:0 4px">'+unread+'</span>':'')+'</div>'+
+        '<div class="ppl-role">'+(p.role?xe(p.role):'—')+'</div>'+
+        (tc?'<div class="ppl-tc">'+tc+' active task'+(tc>1?'s':'')+'</div>':'')+
+      '</div>'+
+      '<div class="ppl-acts">'+
+        '<button class="ppl-link-btn" onclick="event.stopPropagation();copyPersonLink(\''+p.id+'\')">🔗</button>'+
+        '<button class="ppl-edit-btn" onclick="event.stopPropagation();openPModal(\''+p.id+'\')"><i class="ti ti-edit"></i></button>'+
+      '</div>'+
+    '</div>';
+  }
+
+  if(businesses.length){
+    businesses.forEach(function(biz){
+      var bizPeople=people.filter(function(p){return p.bizId===biz.id;});
+      if(!bizPeople.length)return;
+      html+='<div style="margin:12px 10px 0;padding:10px 12px;background:var(--surface);border-radius:12px;border-left:3px solid '+(biz.color||'var(--accent)')+'">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+          '<div style="width:10px;height:10px;border-radius:5px;background:'+(biz.color||'var(--accent)')+'"></div>'+
+          '<span style="font-size:13px;font-weight:700;color:var(--text)">'+xe(biz.name)+'</span>'+
+          '<span style="font-size:11px;color:var(--muted)">'+bizPeople.length+' member'+(bizPeople.length>1?'s':'')+'</span>'+
+        '</div>';
+      /* Group by dept within biz */
+      var deptIds=[...new Set(bizPeople.map(function(p){return p.deptId||'__none__'}))];
+      deptIds.forEach(function(deptId){
+        var dept=deptId!=='__none__'?departments.find(function(d){return d.id===deptId;}):null;
+        var deptPeople=bizPeople.filter(function(p){return (p.deptId||'__none__')===deptId;});
+        if(dept){
+          html+='<div style="margin:6px 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding-left:4px">'+xe(dept.name)+'</div>';
+        }
+        deptPeople.forEach(function(p){html+=personCard(p);});
+      });
+      html+='</div>';
     });
-  });
+  }
+  /* People with no business */
+  var noBizPeople=people.filter(function(p){return !p.bizId;});
+  if(noBizPeople.length){
+    html+='<div class="ppl-dept-lbl" style="margin-top:12px">No Business Assigned</div>';
+    noBizPeople.forEach(function(p){html+=personCard(p);});
+  }
   el.innerHTML = html;
 }
 
@@ -2367,9 +2398,15 @@ function render() {
   if(bb) bb.style.display=isMob()?'flex':'none';
 }
 
+function ownerVisibleTasks(){
+  return D.tasks.filter(function(t){
+    return !t.isPersonal && (t.createdBy==='owner' || t.assignedPersonId==='owner');
+  });
+}
 function renderBadges() {
-  var active=D.tasks.filter(function(t){return!t.done&&!t.isPersonal;}).length;
-  var done=D.tasks.filter(function(t){return t.done&&!t.isPersonal;}).length;
+  var vt=ownerVisibleTasks();
+  var active=vt.filter(function(t){return!t.done;}).length;
+  var done=vt.filter(function(t){return t.done;}).length;
   document.getElementById('badges').innerHTML=
     (active?'<span class="badge badge-active">'+active+'</span>':'')+
     (done?'<span class="badge badge-done">'+done+' done</span>':'');
@@ -2428,8 +2465,8 @@ function renderList() {
   if (currentMode==='tags')   { renderTagsView(el); return; }
   if (currentMode==='people') { renderPeopleView(el); return; }
   var q = searchQ.trim().toLowerCase();
-  /* Filter out personal (employee-private) tasks from owner list */
-  var ownerTasks = D.tasks.filter(function(t){ return !t.isPersonal; });
+  /* Owner sees: tasks they created OR tasks delegated TO owner by employees */
+  var ownerTasks = ownerVisibleTasks();
   var tasks = q
     ? ownerTasks.filter(function(t){
         return t.title.toLowerCase().indexOf(q) !== -1 ||
@@ -3062,6 +3099,7 @@ function openModal(id) {
   projSel.innerHTML='<option value="">No project</option>'+
     D.projects.map(function(p){return '<option value="'+p.id+'">'+xe(p.name)+'</option>';}).join('');
   assSel.innerHTML='<option value="">— Unassigned —</option>'+
+    '<option value="owner">👤 Manager (Self)</option>'+
     (D.people||[]).map(function(p){return '<option value="'+p.id+'">'+xe(p.name)+'</option>';}).join('');
   var dueEl=document.getElementById('modal-due');
   if(editId){
@@ -3096,7 +3134,7 @@ function saveNew() {
   var name=document.getElementById('modal-name').value.trim(); if(!name) return;
   var assSel=document.getElementById('modal-assignee');
   var assId=assSel.value||null;
-  var assName=assId?((D.people||[]).find(function(p){return p.id===assId;})||{}).name||'':'';
+  var assName=assId==='owner'?'Manager':assId?((D.people||[]).find(function(p){return p.id===assId;})||{}).name||'':'';
   var projId=document.getElementById('modal-project').value||null;
   var due=document.getElementById('modal-due').value||null;
   var goalId=document.getElementById('modal-goal').value||null;
@@ -3104,9 +3142,9 @@ function saveNew() {
   var task={id:uid(),title:name,assignee:assName,assignedPersonId:assId,projectId:projId,dueDate:due,
     done:false,notes:'',createdAt:new Date().toISOString(),steps:[],tags:editingTags.slice(),
     goalId:goalId,categoryId:catId,target:'',preparation:'',comments:[],bizId:D.currentBizId||null,
-    isPersonal:false,personalOwnerId:null};
+    isPersonal:false,personalOwnerId:null,createdBy:'owner'};
   D.tasks.unshift(task);aid=task.id;ctab='steps';
-  if(assId) addNotification(assId,'task_assigned',task.id,name,'Manager');
+  if(assId&&assId!=='owner') addNotification(assId,'task_assigned',task.id,name,'Manager');
   lg('Task created: "'+name+'"'+(assName?' → '+assName:''));
   sv();closeModal();render();
   if(isMob()) document.body.classList.add('mob-detail');
@@ -3189,8 +3227,7 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
 })();
 
 (async function(){
-  /* Owner mode — clear any employee context */
-  localStorage.removeItem('chain_delegate_pid');
+  /* Owner mode — sessionStorage-based, no cleanup needed */
   /* Show loading only if no local cache exists */
   var hasLocal = !!localStorage.getItem(LOCAL_KEY);
   if (!hasLocal) {
@@ -3213,7 +3250,7 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
       }
     }
   }catch(e){}
-  var visibleTasks=(D.tasks||[]).filter(function(t){return !t.isPersonal;});
+  var visibleTasks=ownerVisibleTasks();
   if(!aid && visibleTasks.length) aid=visibleTasks[0].id;
   render();
   updateBizBtn();
@@ -3424,15 +3461,16 @@ function openPModal(id){
   document.getElementById('p-modal-title').textContent=p?'Edit Person':'Add Person';
   document.getElementById('p-name').value=p?p.name:'';
   document.getElementById('p-role').value=p?(p.role||''):'';
-  document.getElementById('p-dept').value=p?(p.dept||''):'';
-  document.getElementById('p-pin').value=p?(p.pin||''):'';
   document.getElementById('p-phone').value=p?(p.phone||''):'';
   if(p&&p.color)_personColor=p.color;
+  /* Business dropdown */
   document.getElementById('p-biz').innerHTML=
-    '<option value="">All businesses</option>'+
+    '<option value="">— No business —</option>'+
     (D.businesses||[]).map(function(b){
       return '<option value="'+b.id+'"'+(p&&p.bizId===b.id?' selected':'')+'>'+xe(b.name)+'</option>';
     }).join('');
+  /* Dept dropdown (populate for current biz) */
+  renderPDeptOptions(p?p.bizId:null, p?p.deptId:null);
   renderPersonColors();
   document.getElementById('p-del-btn').style.display=p?'':'none';
   var linkRow=document.getElementById('p-link-row');
@@ -3444,6 +3482,25 @@ function openPModal(id){
   }
   document.getElementById('p-overlay').classList.add('open');
   setTimeout(function(){document.getElementById('p-name').focus();},80);
+}
+function renderPDeptOptions(bizId, selectedDeptId){
+  var depts=(D.departments||[]).filter(function(d){return !bizId||d.bizId===bizId;});
+  var sel=document.getElementById('p-dept-sel');
+  var inp=document.getElementById('p-dept-new');
+  sel.innerHTML='<option value="">— No department —</option>'+
+    depts.map(function(d){return '<option value="'+d.id+'"'+(d.id===selectedDeptId?' selected':'')+'>'+xe(d.name)+'</option>';}).join('')+
+    '<option value="__new__">➕ Add new department…</option>';
+  inp.style.display='none';inp.value='';
+}
+function onPBizChange(){
+  var bizId=document.getElementById('p-biz').value||null;
+  renderPDeptOptions(bizId,null);
+}
+function onPDeptChange(){
+  var v=document.getElementById('p-dept-sel').value;
+  var inp=document.getElementById('p-dept-new');
+  inp.style.display=(v==='__new__')?'':'none';
+  if(v==='__new__')inp.focus();
 }
 function closePModal(){document.getElementById('p-overlay').classList.remove('open');_editPersonId=null;}
 
@@ -3457,16 +3514,30 @@ function pickPC(c){_personColor=c;renderPersonColors();}
 function savePerson(){
   var name=document.getElementById('p-name').value.trim();if(!name)return;
   var role=document.getElementById('p-role').value.trim();
-  var dept=document.getElementById('p-dept').value.trim();
-  var pin=document.getElementById('p-pin').value.trim();
   var phone=document.getElementById('p-phone').value.trim();
   var bizId=document.getElementById('p-biz').value||null;
+  /* Dept: existing id or create new */
+  var deptSelVal=document.getElementById('p-dept-sel').value;
+  var deptId=null;
+  if(deptSelVal==='__new__'){
+    var newDeptName=document.getElementById('p-dept-new').value.trim();
+    if(newDeptName){
+      if(!D.departments)D.departments=[];
+      var nd={id:uid(),name:newDeptName,bizId:bizId};
+      D.departments.push(nd);
+      deptId=nd.id;
+    }
+  } else if(deptSelVal){
+    deptId=deptSelVal;
+  }
+  var dept='';
+  if(deptId){var dd=(D.departments||[]).find(function(x){return x.id===deptId;});if(dd)dept=dd.name;}
   if(!D.people)D.people=[];
   if(_editPersonId){
     var p=(D.people||[]).find(function(x){return x.id===_editPersonId;});
-    if(p){p.name=name;p.role=role;p.dept=dept;p.pin=pin;p.phone=phone;p.bizId=bizId;p.color=_personColor;}
+    if(p){p.name=name;p.role=role;p.dept=dept;p.deptId=deptId;p.phone=phone;p.bizId=bizId;p.color=_personColor;}
   } else {
-    D.people.push({id:uid(),name:name,role:role,dept:dept,pin:pin,phone:phone,bizId:bizId,color:_personColor});
+    D.people.push({id:uid(),name:name,role:role,dept:dept,deptId:deptId,phone:phone,bizId:bizId,color:_personColor});
   }
   sv();closePModal();
   if(currentMode==='people')renderList();
@@ -3703,21 +3774,17 @@ document.addEventListener('click', function(e) {
       <input id="p-name" class="f-inp" placeholder="e.g. Ravi Sharma" autocomplete="off">
     </div>
     <div class="f-row">
-      <div class="f-lbl">Role / Designation</div>
-      <input id="p-role" class="f-inp" placeholder="e.g. Operations Manager" autocomplete="off">
+      <div class="f-lbl">Business</div>
+      <select id="p-biz" class="f-sel" onchange="onPBizChange()"></select>
     </div>
     <div class="f-row">
       <div class="f-lbl">Department</div>
-      <input id="p-dept" class="f-inp" placeholder="e.g. Operations" autocomplete="off">
+      <select id="p-dept-sel" class="f-sel" onchange="onPDeptChange()"></select>
+      <input id="p-dept-new" class="f-inp" placeholder="New department name…" autocomplete="off" style="display:none;margin-top:6px">
     </div>
     <div class="f-row">
-      <div class="f-lbl">Business</div>
-      <select id="p-biz" class="f-sel"></select>
-    </div>
-    <div class="f-row">
-      <div class="f-lbl">Access PIN (4 digits)</div>
-      <input id="p-pin" class="f-inp" type="number" placeholder="e.g. 1234" autocomplete="off">
-      <div class="f-hint">Person enters this PIN to view their delegated tasks via the shareable link</div>
+      <div class="f-lbl">Role / Designation</div>
+      <input id="p-role" class="f-inp" placeholder="e.g. Operations Manager" autocomplete="off">
     </div>
     <div class="f-row">
       <div class="f-lbl">Phone (optional)</div>

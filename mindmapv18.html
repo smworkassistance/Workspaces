@@ -248,8 +248,8 @@ var STEP_GAP = 30;    // vertical gap between steps
     }
   } catch(e){ console.error(e); }
 
-  /* Employee mode — filter to only that person's tasks */
-  var dpid=localStorage.getItem('chain_delegate_pid');
+  /* Employee mode — per-tab sessionStorage, no cross-tab contamination */
+  var dpid=sessionStorage.getItem('chain_delegate_pid');
   if(dpid){
     D.tasks=(D.tasks||[]).filter(function(t){
       return t.assignedPersonId===dpid||(t.isPersonal&&t.personalOwnerId===dpid);
