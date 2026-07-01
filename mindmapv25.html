@@ -539,6 +539,7 @@ var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 var kbRows  = [];        /* [{head, explanation, pinned?, id}] */
 var chatLog = [];        /* [{role:'user'|'ai', content, time}] */
 var taskData = null;     /* chain_state data (loaded on demand) */
+var _empUrlPid = new URLSearchParams(window.location.search).get('pid')||''; /* employee pid (global, for openChainRef) */
 var editingRowId = null; /* null = new, else = id of row being edited */
 
 /* ── Default KB rows (seeded once on first load) ─────────── */
@@ -1195,9 +1196,8 @@ function describeAction(a){
 }
 
 function openChainRef(type, name){
-  if(delegatePid){
-    // Employee mode — find task by name, open in delegate.html
-    var url='delegate.html?pid='+delegatePid;
+  if(_empUrlPid){
+    var url='delegate.html?pid='+_empUrlPid;
     if(type==='task'&&taskData){
       var match=(taskData.tasks||[]).find(function(t){
         return t.title&&t.title.toLowerCase()===name.toLowerCase();
