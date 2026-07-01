@@ -286,8 +286,11 @@ function startRealtime(){
 
   /* Use sessionStorage (per-tab, no cross-tab contamination) */
   sessionStorage.setItem('chain_delegate_pid',pid);
-  /* Fix nav home link to include pid */
+  /* Pass pid in all nav links so shared pages know they're in employee mode */
   document.getElementById('nav-home').href='delegate.html?pid='+pid;
+  document.getElementById('nav-map').href='mindmapv18.html?pid='+pid;
+  document.getElementById('nav-time').href='timeblocksv1.html?pid='+pid;
+  document.getElementById('nav-ai').href='mindmapv25.html?pid='+pid;
 
   await ld();
 

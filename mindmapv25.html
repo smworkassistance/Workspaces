@@ -1335,8 +1335,8 @@ var WORKER_URL = 'https://chain.smworkassistance.workers.dev/';
 async function callGemini(userMessage){
   var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
 
-  /* ── Employee mode check (sessionStorage = per-tab, no cross-tab leak) ── */
-  var delegatePid = sessionStorage.getItem('chain_delegate_pid');
+  /* ── Employee mode check: URL param is authoritative ── */
+  var delegatePid = new URLSearchParams(window.location.search).get('pid')||sessionStorage.getItem('chain_delegate_pid')||'';
   var isEmployee = !!delegatePid;
   var empPerson = isEmployee && taskData ? (taskData.people||[]).find(function(p){return p.id===delegatePid;}) : null;
   var empName = empPerson ? empPerson.name : 'Team Member';
@@ -1540,7 +1540,8 @@ async function boot(){
   } else {
     currentSessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
     /* Build welcome message — filter counts for employee mode */
-    var _bootDpid=sessionStorage.getItem('chain_delegate_pid');
+    var _bootDpid=new URLSearchParams(window.location.search).get('pid')||sessionStorage.getItem('chain_delegate_pid')||'';
+    if(_bootDpid)sessionStorage.setItem('chain_delegate_pid',_bootDpid);
     var _isEmpBoot=!!_bootDpid;
     /* Check if AI is enabled for employees */
     if(_isEmpBoot && taskData && taskData.aiSettings && taskData.aiSettings.empAiEnabled===false){
@@ -1572,14 +1573,16 @@ boot();
 
 /* ── Dynamic nav (employee vs owner) ─────────────────────── */
 window.addEventListener('DOMContentLoaded',function(){
-  var dpid=sessionStorage.getItem('chain_delegate_pid');
+  var dpid=new URLSearchParams(window.location.search).get('pid');
+  if(!dpid)return;
+  sessionStorage.setItem('chain_delegate_pid',dpid);
   var nav=document.getElementById('bottom-nav');
-  if(!nav||!dpid)return;
+  if(!nav)return;
   nav.innerHTML=
     '<a href="delegate.html?pid='+dpid+'" class="bn-item"><i class="ti ti-home"></i><span>Home</span></a>'+
-    '<a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>'+
-    '<a href="timeblocksv1.html" class="bn-item"><i class="ti ti-clock-bolt"></i><span>Time</span></a>'+
-    '<a href="mindmapv25.html" class="bn-item active"><i class="ti ti-sparkles"></i><span>AI</span></a>';
+    '<a href="mindmapv18.html?pid='+dpid+'" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>'+
+    '<a href="timeblocksv1.html?pid='+dpid+'" class="bn-item"><i class="ti ti-clock-bolt"></i><span>Time</span></a>'+
+    '<a href="mindmapv25.html?pid='+dpid+'" class="bn-item active"><i class="ti ti-sparkles"></i><span>AI</span></a>';
   nav.style.cssText+=';display:grid;grid-template-columns:repeat(4,1fr)';
 });
 </script>

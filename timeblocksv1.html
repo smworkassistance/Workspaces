@@ -322,8 +322,12 @@ function fmtTime(hhmm) {
   return hh + (m?':'+String(m).padStart(2,'0'):'') + ' ' + ap;
 }
 
-/* Employee mode: read from sessionStorage (per-tab, no cross-tab leak) */
-var _empPid = sessionStorage.getItem('chain_delegate_pid')||'';
+/* Employee mode: URL param takes priority; sessionStorage is set if URL param found */
+var _empPid = (function(){
+  var p=new URLSearchParams(window.location.search).get('pid')||'';
+  if(p)sessionStorage.setItem('chain_delegate_pid',p);
+  return p;
+})();
 
 function sortedBlocks() {
   var all=(D.timeBlocks||[]).slice();
@@ -676,15 +680,15 @@ window.addEventListener('DOMContentLoaded', function(){
 
 /* ── Dynamic nav (employee vs owner) ─────────────────────── */
 function buildEmpNav(){
-  var dpid=sessionStorage.getItem('chain_delegate_pid');
+  var dpid=_empPid;
   var nav=document.getElementById('bottom-nav');
   if(!nav)return;
   if(dpid){
     nav.innerHTML=
       '<a href="delegate.html?pid='+dpid+'" class="bn-item"><i class="ti ti-home"></i><span>Home</span></a>'+
-      '<a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>'+
-      '<a href="timeblocksv1.html" class="bn-item active"><i class="ti ti-clock-bolt"></i><span>Time</span></a>'+
-      '<a href="mindmapv25.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>';
+      '<a href="mindmapv18.html?pid='+dpid+'" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>'+
+      '<a href="timeblocksv1.html?pid='+dpid+'" class="bn-item active"><i class="ti ti-clock-bolt"></i><span>Time</span></a>'+
+      '<a href="mindmapv25.html?pid='+dpid+'" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>';
     /* Switch from flex-scroll to grid */
     nav.style.cssText=nav.style.cssText+';display:grid;grid-template-columns:repeat(4,1fr);overflow:visible';
     nav.querySelectorAll('.bn-item').forEach(function(a){a.style.flex='unset';});
