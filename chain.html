@@ -1392,7 +1392,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Tasks</div>
     <div id="perf-tasks"></div>
     <button id="perf-assign-btn" onclick="closePerfPanel();openModalForPerson(_perfPid)" style="margin-top:16px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent"><i class="ti ti-plus"></i> Assign Task</button>
-    <button onclick="copyPersonLinkFromPerf()" style="margin-top:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);border:1.5px solid rgba(124,111,255,.3);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">🔗 Copy Employee Link</button>
+    <button onclick="openEmpSheetFromPerf()" style="margin-top:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);border:1.5px solid rgba(124,111,255,.3);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent"><i class="ti ti-external-link"></i> Open Employee View</button>
   </div>
 </div>
 
@@ -2122,7 +2122,7 @@ function renderPeopleView(el) {
         (tc?'<div class="ppl-tc">'+tc+' active task'+(tc>1?'s':'')+'</div>':'')+
       '</div>'+
       '<div class="ppl-acts">'+
-        '<button class="ppl-link-btn" onclick="event.stopPropagation();copyPersonLink(\''+p.id+'\')">🔗</button>'+
+        '<button class="ppl-link-btn" onclick="event.stopPropagation();openEmpSheet(\''+p.id+'\')" title="Open employee view"><i class="ti ti-external-link"></i></button>'+
         '<button class="ppl-edit-btn" onclick="event.stopPropagation();openPModal(\''+p.id+'\')"><i class="ti ti-edit"></i></button>'+
       '</div>'+
     '</div>';
@@ -3756,28 +3756,16 @@ function deletePerson(){
   else render();
 }
 
-function copyPersonLink(pid){
-  var base=window.location.href.replace(/[^\/]*$/, '');
-  var url=base+'delegate.html?pid='+pid;
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(function(){showToast('Link copied!');});
-  } else {
-    prompt('Copy this link:',url);
-  }
+function openEmpSheet(personId){
+  var base=window.location.href.replace(/[^\/]*$/,'');
+  window.open(base+'delegate.html?pid='+personId,'_blank');
 }
-function copyDelegateLink(){
+function openEmpSheetFromPerf(){
+  if(_perfPid)openEmpSheet(_perfPid);
+}
+function openEmpSheetFromModal(){
   var p=_editPersonId?(D.people||[]).find(function(x){return x.id===_editPersonId;}):null;
-  if(!p)return;
-  var base=window.location.href.replace(/[^\/]*$/, '');
-  var url=base+'delegate.html?pid='+p.id;
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(function(){
-      var btn=document.querySelector('.link-copy-btn');
-      if(btn){var old=btn.textContent;btn.textContent='Copied!';setTimeout(function(){btn.textContent=old;},1500);}
-    });
-  } else {
-    prompt('Copy this link:',url);
-  }
+  if(p)openEmpSheet(p.id);
 }
 function showToast(msg){
   var t=document.createElement('div');
@@ -3947,10 +3935,7 @@ function closePerfPanel(){
   var _po=document.getElementById('perf-overlay');
   if(_po){_po.classList.remove('open');_po.style.display='none';}
 }
-function copyPersonLinkFromPerf(){
-  if(!_perfPid)return;
-  copyPersonLink(_perfPid);
-}
+
 
 /* ── Employee AI Settings ───────────────────────────────── */
 function openAiSettings(){
@@ -4040,10 +4025,10 @@ document.addEventListener('click', function(e) {
       <div id="p-colors" class="f-colors"></div>
     </div>
     <div class="f-row" id="p-link-row" style="display:none">
-      <div class="f-lbl">Delegate Link — share this with the person</div>
+      <div class="f-lbl">Employee View</div>
       <div class="link-copy-row">
         <span class="link-copy-url" id="p-link-url"></span>
-        <button class="link-copy-btn" onclick="copyDelegateLink()">Copy</button>
+        <button class="link-copy-btn" onclick="openEmpSheetFromModal()"><i class="ti ti-external-link"></i> Open</button>
       </div>
     </div>
     <div class="f-btns">
