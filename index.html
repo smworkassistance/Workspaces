@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v26</title>
+<title>Chain v27</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -2606,10 +2606,11 @@ function ownerVisibleTasks(){
   });
 }
 function renderBadges() {
+  var el=document.getElementById('badges'); if(!el) return;
   var vt=ownerVisibleTasks();
   var active=vt.filter(function(t){return!t.done;}).length;
   var done=vt.filter(function(t){return t.done;}).length;
-  document.getElementById('badges').innerHTML=
+  el.innerHTML=
     (active?'<span class="badge badge-active">'+active+'</span>':'')+
     (done?'<span class="badge badge-done">'+done+' done</span>':'');
 }
