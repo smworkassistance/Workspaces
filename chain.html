@@ -1395,6 +1395,38 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   </div>
 </div>
 
+<!-- AI Settings Sheet -->
+<div id="ai-settings-overlay" onclick="if(event.target===this)closeAiSettings()" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:flex-end">
+  <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px calc(env(safe-area-inset-bottom,0px)+20px);width:100%;max-height:85dvh;overflow-y:auto;animation:slideUp .22s ease">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <span style="font-size:22px">🤖</span>
+      <span style="font-size:17px;font-weight:700;flex:1">Employee AI Management</span>
+      <button onclick="closeAiSettings()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer"><i class="ti ti-x"></i></button>
+    </div>
+    <!-- Enable/disable toggle -->
+    <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface2);border-radius:12px;margin-bottom:14px">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">Enable AI for Employees</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Employees can use the AI chat page</div>
+      </div>
+      <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0">
+        <input type="checkbox" id="ai-emp-toggle" onchange="saveAiSettings()" style="opacity:0;width:0;height:0;position:absolute">
+        <span id="ai-toggle-track" onclick="document.getElementById('ai-emp-toggle').click()" style="position:absolute;inset:0;border-radius:12px;background:var(--border);cursor:pointer;transition:.2s">
+          <span id="ai-toggle-knob" style="position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.2s"></span>
+        </span>
+      </label>
+    </div>
+    <!-- Context input -->
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Employee AI System Context</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">This text is added to every employee AI session as background context (company name, policies, tone, etc.)</div>
+    <textarea id="ai-emp-ctx" placeholder="e.g. You are an AI assistant for ABC Company. Help employees manage their assigned tasks. Be concise and professional. Focus on task management, priorities, and deadlines only." style="width:100%;min-height:130px;background:var(--surface2);border:.5px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none;resize:vertical;line-height:1.6" oninput="saveAiSettings()"></textarea>
+    <div style="margin-top:14px;padding:12px;background:rgba(124,111,255,.07);border-radius:10px;font-size:12px;color:var(--muted)">
+      <strong style="color:var(--text)">How it works:</strong> When an employee opens the AI page, this context tells the AI about your company. The AI will then only discuss the employee's assigned tasks and follow your instructions.
+    </div>
+    <button onclick="closeAiSettings()" style="margin-top:16px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer">Done</button>
+  </div>
+</div>
+
 <!-- Task Modal -->
 <div id="modal-overlay" onclick="closeModal()">
   <div id="modal" onclick="event.stopPropagation()">
@@ -1604,6 +1636,7 @@ function ensureDefaults() {
   if (!D.people)        D.people        = [];
   if (!D.notifications) D.notifications = [];
   if (!('currentBizId' in D)) D.currentBizId = null;
+  if (!D.aiSettings) D.aiSettings = {empAiEnabled:true, empAiContext:''};
   D.tasks.forEach(function(t){
     if (!t.tags)       t.tags=[];
     if (!('goalId' in t))          t.goalId=null;
@@ -2028,10 +2061,13 @@ function renderTagsView(el) {
 function renderPeopleView(el) {
   var people = D.people||[];
   var tasks = D.tasks||[];
+  var empAiOn = D.aiSettings && D.aiSettings.empAiEnabled !== false;
   var html = '<div class="ppl-hdr">'+
     '<span class="ppl-hdr-title">Team</span>'+
+    '<button class="ppl-add-btn" onclick="openAiSettings()" title="Employee AI Settings" style="background:var(--surface2);color:var(--accent);margin-right:6px"><i class="ti ti-robot"></i> AI</button>'+
     '<button class="ppl-add-btn" onclick="openPModal()"><i class="ti ti-user-plus"></i> Add</button>'+
-  '</div>';
+  '</div>'+
+  (empAiOn?'':'<div style="margin:0 14px 8px;padding:8px 12px;background:rgba(255,59,48,.08);border-radius:8px;font-size:12px;color:#FF3B30"><i class="ti ti-robot-off"></i> Employee AI is currently disabled</div>');
   if (!people.length) {
     html += '<div class="empty-st"><i class="ti ti-users"></i><p>No team members yet.<br>Add people to delegate tasks<br>and share their task link.</p></div>';
     el.innerHTML = html; return;
@@ -3744,6 +3780,35 @@ function closePerfPanel(){document.getElementById('perf-overlay').classList.remo
 function copyPersonLinkFromPerf(){
   if(!_perfPid)return;
   copyPersonLink(_perfPid);
+}
+
+/* ── Employee AI Settings ───────────────────────────────── */
+function openAiSettings(){
+  if(!D.aiSettings)D.aiSettings={empAiEnabled:true,empAiContext:''};
+  var tog=document.getElementById('ai-emp-toggle');
+  var track=document.getElementById('ai-toggle-track');
+  var knob=document.getElementById('ai-toggle-knob');
+  var on=D.aiSettings.empAiEnabled!==false;
+  tog.checked=on;
+  track.style.background=on?'var(--accent)':'var(--border)';
+  knob.style.left=on?'22px':'2px';
+  document.getElementById('ai-emp-ctx').value=D.aiSettings.empAiContext||'';
+  document.getElementById('ai-settings-overlay').style.display='flex';
+}
+function closeAiSettings(){
+  document.getElementById('ai-settings-overlay').style.display='none';
+  renderList();
+}
+function saveAiSettings(){
+  if(!D.aiSettings)D.aiSettings={};
+  var on=document.getElementById('ai-emp-toggle').checked;
+  D.aiSettings.empAiEnabled=on;
+  D.aiSettings.empAiContext=document.getElementById('ai-emp-ctx').value;
+  var track=document.getElementById('ai-toggle-track');
+  var knob=document.getElementById('ai-toggle-knob');
+  track.style.background=on?'var(--accent)':'var(--border)';
+  knob.style.left=on?'22px':'2px';
+  sv();
 }
 
 /* Close dropdown when clicking outside */
