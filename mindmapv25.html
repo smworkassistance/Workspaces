@@ -1353,12 +1353,15 @@ async function callGemini(userMessage){
   /* Build system instruction */
   var sysText;
   if(isEmployee){
-    sysText = 'You are a personal task management assistant for '+empName+'. ' +
+    /* Use manager-defined context if available */
+    var mgr_ctx = (taskData && taskData.aiSettings && taskData.aiSettings.empAiContext) ? taskData.aiSettings.empAiContext.trim() : '';
+    sysText = (mgr_ctx ? mgr_ctx + '\n\n' : '') +
+      'You are a personal task management assistant for '+empName+'. ' +
       'Your role is to help them manage, understand, and complete their assigned tasks effectively.\n\n' +
       'RULES:\n' +
-      '- Only discuss tasks assigned to '+empName+' or their personal tasks. Never mention other employees\' tasks or confidential business information.\n' +
+      '- Only discuss tasks assigned to '+empName+' or their personal tasks. Never reveal other employees\' data or confidential business information.\n' +
       '- Do not discuss financial data, revenue figures, or other employees\' performance.\n' +
-      '- Help them break down tasks into steps, set priorities, and stay focused.\n' +
+      '- Help them break down tasks into steps, set priorities, and stay on schedule.\n' +
       '- If they ask about tasks that are not theirs, politely decline.\n' +
       '- Be encouraging and practical — help them succeed at their work.\n' +
       '- You can suggest creating personal tasks or adding steps to existing tasks.';
@@ -1536,13 +1539,32 @@ async function boot(){
     msgsEl.scrollTop=999999;
   } else {
     currentSessionId=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    msgsEl.innerHTML='<div class="msg-wrap ai"><div class="msg-ai-label">Chain AI</div>'+
-      '<div class="msg-bubble">Ready! '+
-      (taskData.tasks?taskData.tasks.filter(function(t){return!t.done;}).length:0)+
-      ' active tasks | '+
-      (taskData.projects?taskData.projects.length:0)+
-      ' projects loaded. Use 🌐 Search for internet research. Ask me anything! 🚀</div>'+
-      '<div class="msg-time">'+ts()+'</div></div>';
+    /* Build welcome message — filter counts for employee mode */
+    var _bootDpid=sessionStorage.getItem('chain_delegate_pid');
+    var _isEmpBoot=!!_bootDpid;
+    /* Check if AI is enabled for employees */
+    if(_isEmpBoot && taskData && taskData.aiSettings && taskData.aiSettings.empAiEnabled===false){
+      msgsEl.innerHTML='<div class="msg-wrap ai"><div class="msg-ai-label">Chain AI</div>'+
+        '<div class="msg-bubble">🔒 AI assistant is currently disabled by your manager.</div>'+
+        '<div class="msg-time">'+ts()+'</div></div>';
+      document.getElementById('inp').disabled=true;
+      document.getElementById('send-btn').disabled=true;
+    } else {
+      var _bootActiveTasks;
+      if(_isEmpBoot){
+        _bootActiveTasks=(taskData.tasks||[]).filter(function(t){
+          return !t.done&&(t.assignedPersonId===_bootDpid||(t.isPersonal&&t.personalOwnerId===_bootDpid));
+        }).length;
+      } else {
+        _bootActiveTasks=(taskData.tasks||[]).filter(function(t){return!t.done;}).length;
+      }
+      msgsEl.innerHTML='<div class="msg-wrap ai"><div class="msg-ai-label">Chain AI</div>'+
+        '<div class="msg-bubble">Ready! '+_bootActiveTasks+
+        (_isEmpBoot?' tasks assigned to you'
+         :' active tasks | '+(taskData.projects?taskData.projects.length:0)+' projects loaded. Use 🌐 Search for internet research')+
+        '. Ask me anything! 🚀</div>'+
+        '<div class="msg-time">'+ts()+'</div></div>';
+    }
   }
   updateSearchToggle();
 }
