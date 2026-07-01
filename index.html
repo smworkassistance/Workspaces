@@ -1291,7 +1291,7 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
 .ppl-card-clickable:active{background:rgba(124,111,255,.04)}
 #perf-overlay{position:fixed;inset:0;z-index:500;display:none;background:rgba(0,0,0,.35);transition:background .25s}
 #perf-overlay.open{display:block}
-#perf-overlay.open #perf-sheet{transform:translateX(0)}
+#perf-overlay.open #perf-sheet{transform:translateX(0) !important}
 /* Hierarchy people cards inside biz blocks */
 .ppl-biz-block .ppl-card{margin:2px 0;border-radius:10px}
 </style>
@@ -3941,11 +3941,11 @@ function openPersonPerf(pid){
   (D.notifications||[]).forEach(function(n){if(n.toId==='owner'&&n.fromPid===pid&&!(n.readBy||[]).includes('owner')){n.readBy.push('owner');changed2=true;}});
   if(changed2){sv();updateNotifBadge();renderPeopleView&&document.getElementById('task-list')&&(currentMode==='people')&&renderList();}
   var _po=document.getElementById('perf-overlay');
-  if(_po){_po.style.display='block';requestAnimationFrame(function(){_po.classList.add('open');});}
+  if(_po){_po.style.display='block';_po.classList.add('open');}
 }
 function closePerfPanel(){
   var _po=document.getElementById('perf-overlay');
-  if(_po){_po.classList.remove('open');setTimeout(function(){_po.style.display='none';},300);}
+  if(_po){_po.classList.remove('open');_po.style.display='none';}
 }
 function copyPersonLinkFromPerf(){
   if(!_perfPid)return;
