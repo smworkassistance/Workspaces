@@ -42,13 +42,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .bn-item i{font-size:22px}
 .bn-item.active{color:var(--accent)}
 
-/* ── Section headers ──────────────────────────────── */
-.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.sec-count{background:var(--surface2);border-radius:10px;padding:2px 8px;font-size:11px;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
-.sec-icon{font-size:14px;margin-right:4px}
 
 /* ── Task row (admin-sidebar style) ──────────────────── */
-.task-row{background:var(--surface);margin:2px 10px;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06);border:.5px solid var(--border);border-left-width:3px;border-left-style:solid}
+.task-row{background:var(--surface);margin:4px 0;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06);border:.5px solid var(--border);border-left-width:3px;border-left-style:solid}
 .task-row.tr-done{opacity:.5}
 .tr-inner{display:flex;align-items:stretch;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .tr-inner:active{background:rgba(0,0,0,.03)}
@@ -130,16 +126,30 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .add-save{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer}
 
 /* ── Stats row ────────────────────────────────────── */
-#stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 12px 4px}
-.stat-card{background:var(--surface);border-radius:12px;padding:10px 12px;text-align:center;border:.5px solid var(--border)}
+#stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 12px 6px}
+.stat-card{background:var(--surface);border-radius:12px;padding:10px 12px;text-align:center;border:.5px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .stat-val{font-size:22px;font-weight:800;line-height:1}
 .stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:3px}
 
-/* ── Section header ───────────────────────────────── */
-.sec-hdr{display:flex;align-items:center;gap:8px;padding:12px 14px 6px}
-.sec-hdr-line{width:3px;height:16px;border-radius:2px;flex-shrink:0}
-.sec-hdr-text{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text);flex:1}
-.sec-count{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:2px 9px;font-size:11px;color:var(--muted);font-weight:700}
+/* ── Accordion sections ───────────────────────────── */
+.acc-wrap{padding:4px 10px 12px}
+.acc-sec{background:var(--surface);border-radius:14px;margin-bottom:8px;overflow:hidden;border:.5px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.acc-hdr{display:flex;align-items:center;gap:10px;padding:13px 14px 13px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;position:relative;user-select:none}
+.acc-hdr:active{background:rgba(0,0,0,.02)}
+.acc-bar{width:4px;border-radius:0 2px 2px 0;align-self:stretch;flex-shrink:0;min-height:48px;transition:opacity .2s}
+.acc-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.acc-label{flex:1;min-width:0}
+.acc-title{font-size:15px;font-weight:700;color:var(--text)}
+.acc-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.acc-badge{min-width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:0 7px;font-size:12px;font-weight:700;flex-shrink:0;transition:background .2s,color .2s}
+.acc-badge.empty{background:var(--surface2);color:var(--muted)}
+.acc-badge.active{background:var(--accent-soft);color:var(--accent)}
+.acc-chev{font-size:18px;color:var(--muted);transition:transform .25s;opacity:.45;margin-right:12px;flex-shrink:0}
+.acc-chev.open{transform:rotate(90deg);opacity:.7}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .32s cubic-bezier(.4,0,.2,1)}
+.acc-body.open{max-height:4000px}
+.acc-tasks{padding:0 8px 8px}
+.acc-empty{padding:14px 14px;text-align:center;color:var(--muted);font-size:13px;font-style:italic}
 
 /* ── Misc ─────────────────────────────────────────── */
 .msg-center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50dvh;gap:12px;color:var(--muted);text-align:center;padding:20px}
@@ -325,21 +335,31 @@ function showError(msg){
 }
 
 /* ── Task categories ────────────────────────────────── */
+/* All tasks assigned to me regardless of who created */
+function allAssignedToMe(){
+  return (D.tasks||[]).filter(function(t){
+    return !t.isPersonal&&t.assignedPersonId===pid;
+  });
+}
+/* From manager/owner — catches createdBy==='owner' OR missing createdBy (older tasks) */
 function managerTasks(){
-  return (D.tasks||[]).filter(function(t){
-    return !t.isPersonal&&t.assignedPersonId===pid&&t.createdBy==='owner';
+  return allAssignedToMe().filter(function(t){
+    return t.createdBy==='owner'||!t.createdBy||t.createdBy==='';
   });
 }
+/* Delegated TO me by a colleague (not owner, not myself) */
 function delegatedToMeTasks(){
-  return (D.tasks||[]).filter(function(t){
-    return !t.isPersonal&&t.assignedPersonId===pid&&t.createdBy&&t.createdBy!=='owner'&&t.createdBy!==pid;
+  return allAssignedToMe().filter(function(t){
+    return t.createdBy&&t.createdBy!=='owner'&&t.createdBy!==pid;
   });
 }
+/* My personal tasks */
 function personalTasks(){
   return (D.tasks||[]).filter(function(t){
     return t.isPersonal&&t.personalOwnerId===pid;
   });
 }
+/* Tasks I delegated to others */
 function iDelegatedTasks(){
   return (D.tasks||[]).filter(function(t){
     return !t.isPersonal&&t.createdBy===pid&&t.assignedPersonId&&t.assignedPersonId!==pid;
@@ -356,40 +376,72 @@ function matchSearch(t){
     (t.steps||[]).some(function(s){return(s.text||'').toLowerCase().indexOf(q)!==-1;});
 }
 
+/* ── Accordion state ─────────────────────────────────── */
+var _accOpen={manager:true,delegated:false,ops:false,personal:true,idelegated:false};
+function toggleAcc(key){
+  _accOpen[key]=!_accOpen[key];
+  var body=document.getElementById('acc-body-'+key);
+  var chev=document.getElementById('acc-chev-'+key);
+  if(body)body.classList.toggle('open',_accOpen[key]);
+  if(chev)chev.classList.toggle('open',_accOpen[key]);
+}
+
 /* ── Render all ─────────────────────────────────────── */
 function renderAll(){
   if(!person)return;
-  var allMgr=managerTasks();var allPersonal=personalTasks();
-  var active=(allMgr.concat(delegatedToMeTasks()).concat(allPersonal).concat(iDelegatedTasks())).filter(function(t){return!t.done;}).length;
-  var done=(allMgr.concat(delegatedToMeTasks()).concat(allPersonal).concat(iDelegatedTasks())).filter(function(t){return t.done;}).length;
-  var personal=allPersonal.length;
+  var mgr=managerTasks();var del=delegatedToMeTasks();var pers=personalTasks();var idel=iDelegatedTasks();
+  var allT=mgr.concat(del).concat(pers).concat(idel);
+  var active=allT.filter(function(t){return!t.done;}).length;
+  var done=allT.filter(function(t){return t.done;}).length;
   var sa=document.getElementById('stat-active');var sd=document.getElementById('stat-done');var sp=document.getElementById('stat-personal');
-  if(sa)sa.textContent=active;if(sd)sd.textContent=done;if(sp)sp.textContent=personal;
+  if(sa)sa.textContent=active;if(sd)sd.textContent=done;if(sp)sp.textContent=pers.length;
+
   var sections=[
-    {label:'Manager\'s Tasks',tasks:managerTasks().filter(matchSearch),color:'var(--accent)'},
-    {label:'Delegated to Me',tasks:delegatedToMeTasks().filter(matchSearch),color:'#FF9500'},
-    {label:'My Personal',tasks:personalTasks().filter(matchSearch),color:'#34C759'},
-    {label:'I Delegated',tasks:iDelegatedTasks().filter(matchSearch),color:'#FF3B30'},
+    {key:'manager', icon:'📌', title:'From Manager', sub:'Operational & assigned work',
+     color:'#6B5FFF', bg:'rgba(107,95,255,.1)', tasks:mgr.filter(matchSearch)},
+    {key:'delegated', icon:'🤝', title:'Delegated to Me', sub:'Tasks from colleagues',
+     color:'#FF9500', bg:'rgba(255,149,0,.1)', tasks:del.filter(matchSearch)},
+    {key:'personal', icon:'🧑', title:'My Personal Tasks', sub:'Tasks only I can see',
+     color:'#34C759', bg:'rgba(52,199,89,.1)', tasks:pers.filter(matchSearch)},
+    {key:'idelegated', icon:'📤', title:'Delegated by Me', sub:'Tasks I assigned to others',
+     color:'#FF3B30', bg:'rgba(255,59,48,.1)', tasks:idel.filter(matchSearch)},
   ];
-  var html='';
-  var hasAny=sections.some(function(s){return s.tasks.length;});
+
+  var hasAny=allT.length>0;
   if(!hasAny){
     var q=(document.getElementById('search-inp')||{}).value||'';
-    html=q
+    document.getElementById('content').innerHTML=q
       ?'<div class="msg-center"><i class="ti ti-zoom-question" style="font-size:36px;opacity:.4"></i><p>No results for "'+xe(q)+'"</p></div>'
-      :'<div class="msg-center"><i class="ti ti-list-check" style="font-size:40px;opacity:.3"></i><p>No tasks yet.<br><small>Tap + to add a personal task.</small></p></div>';
-  } else {
-    sections.forEach(function(sec){
-      if(!sec.tasks.length)return;
-      html+='<div class="sec-hdr">'+
-        '<div class="sec-hdr-line" style="background:'+sec.color+'"></div>'+
-        '<span class="sec-hdr-text">'+xe(sec.label)+'</span>'+
-        '<span class="sec-count">'+sec.tasks.length+'</span>'+
-      '</div>';
-      html+=sec.tasks.map(function(t){return taskCardHtml(t,sec.color);}).join('');
-    });
+      :'<div class="msg-center"><i class="ti ti-list-check" style="font-size:40px;opacity:.3"></i><p>No tasks yet.<br><small>Your manager will assign tasks here.<br>Tap + to add a personal task.</small></p></div>';
+    return;
   }
+
+  var html='<div class="acc-wrap">';
+  sections.forEach(function(sec){
+    var cnt=sec.tasks.length;
+    var isOpen=_accOpen[sec.key];
+    html+='<div class="acc-sec">'+
+      '<div class="acc-hdr" onclick="toggleAcc(\''+sec.key+'\')">'+
+        '<div class="acc-bar" style="background:'+sec.color+'"></div>'+
+        '<div class="acc-icon" style="background:'+sec.bg+'">'+sec.icon+'</div>'+
+        '<div class="acc-label">'+
+          '<div class="acc-title">'+xe(sec.title)+'</div>'+
+          '<div class="acc-sub">'+xe(sec.sub)+'</div>'+
+        '</div>'+
+        '<div class="acc-badge '+(cnt?'active':'empty')+'">'+cnt+'</div>'+
+        '<i class="ti ti-chevron-right acc-chev'+(isOpen?' open':'')+'" id="acc-chev-'+sec.key+'"></i>'+
+      '</div>'+
+      '<div class="acc-body'+(isOpen?' open':'')+'" id="acc-body-'+sec.key+'">'+
+        (cnt
+          ?'<div class="acc-tasks">'+sec.tasks.map(function(t){return taskCardHtml(t,sec.color);}).join('')+'</div>'
+          :'<div class="acc-empty">No tasks in this category</div>'
+        )+
+      '</div>'+
+    '</div>';
+  });
+  html+='</div>';
   document.getElementById('content').innerHTML=html;
+
   /* Restore open task */
   if(openTaskId){
     var det=document.getElementById('tc-detail-'+openTaskId);
