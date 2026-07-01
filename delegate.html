@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<title>My Tasks</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#7C6FFF;--accent-soft:rgba(124,111,255,.1);--accent-mid:rgba(124,111,255,.35);
+  --green:#34C759;--green-soft:rgba(52,199,89,.12);
+  --red:#FF3B30;--red-soft:rgba(255,59,48,.1);
+  --amber:#FF9500;
+  --bg:#F2F2F7;--surface:#fff;--surface2:#F2F2F7;
+  --border:rgba(60,60,67,.18);--border-strong:rgba(60,60,67,.29);
+  --text:rgba(0,0,0,.87);--muted:rgba(60,60,67,.60);--muted2:rgba(60,60,67,.30);
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+}
+html{height:100%;height:100dvh;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);position:fixed;width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;font-size:16px;-webkit-font-smoothing:antialiased}
+
+/* ── PIN screen ── */
+#pin-screen{position:fixed;inset:0;background:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;padding:40px 20px;padding-top:calc(40px + env(safe-area-inset-top,0px))}
+#pin-screen.hidden{display:none}
+.pin-logo{width:64px;height:64px;background:rgba(255,255,255,.2);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:20px}
+.pin-greeting{font-size:22px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
+.pin-sub{font-size:15px;color:rgba(255,255,255,.75);text-align:center;margin-bottom:32px}
+.pin-dots{display:flex;gap:14px;margin-bottom:28px}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:transparent;transition:background .1s}
+.pin-dot.filled{background:#fff;border-color:#fff}
+.pin-err{color:rgba(255,59,48,.9);font-size:14px;font-weight:600;margin-bottom:16px;text-align:center;min-height:20px}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:260px}
+.pk-btn{height:64px;border-radius:16px;background:rgba(255,255,255,.18);border:none;font-size:22px;font-weight:700;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s;font-family:inherit;display:flex;align-items:center;justify-content:center}
+.pk-btn:active{background:rgba(255,255,255,.35)}
+.pk-btn.del{background:rgba(255,255,255,.1)}
+
+/* ── Main app ── */
+#main-app{display:flex;flex-direction:column;height:100%;height:100dvh}
+#main-app.hidden{display:none}
+
+/* Topbar */
+#topbar{display:flex;align-items:flex-end;padding:0 14px;padding-top:env(safe-area-inset-top,0px);height:calc(44px + env(safe-area-inset-top,0px));background:rgba(242,242,247,.93);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid var(--border-strong);flex-shrink:0;z-index:50}
+#topbar-inner{display:flex;align-items:center;gap:10px;width:100%;height:44px}
+#person-av{width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.tb-name{font-size:16px;font-weight:700;flex:1}
+.tb-logout{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:4px}
+
+/* Split layout */
+#split{display:flex;flex:1;overflow:hidden;min-height:0;padding-bottom:calc(0px + env(safe-area-inset-bottom,0px))}
+#task-list-panel{width:100%;flex-shrink:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+#detail-panel{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+
+/* Task row */
+.filter-tabs{display:flex;gap:4px;padding:10px 14px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0}
+.filter-tabs::-webkit-scrollbar{display:none}
+.ftab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.ftab.active{background:var(--accent-soft);border-color:var(--accent-mid);color:var(--accent)}
+.task-row{display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);margin:2px 10px;border-radius:13px;box-shadow:0 1px 4px rgba(0,0,0,.06);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s}
+.task-row:active{background:rgba(124,111,255,.06)}
+.task-row.sel{background:var(--accent-soft);border:1.5px solid var(--accent-mid)}
+.task-check{width:22px;height:22px;border-radius:11px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;cursor:pointer;transition:all .15s}
+.task-check.done{background:var(--green);border-color:var(--green)}
+.task-info{flex:1;min-width:0}
+.task-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3;word-break:break-word}
+.task-title.done{text-decoration:line-through;color:var(--muted)}
+.task-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.task-flag{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:var(--red-soft);color:var(--red);border-radius:5px;padding:1px 6px;margin-left:6px}
+.task-cmt-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--accent);margin-left:5px}
+.empty-tasks{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
+.empty-tasks i{font-size:40px;opacity:.3;display:block;margin-bottom:12px}
+
+/* Detail panel */
+.detail-wrap{padding:14px}
+#back-btn{display:flex;align-items:center;gap:5px;color:var(--accent);font-size:14px;font-weight:600;background:none;border:none;cursor:pointer;padding:0 0 12px;-webkit-tap-highlight-color:transparent}
+.detail-title{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px;line-height:1.25}
+.detail-meta{font-size:13px;color:var(--muted);margin-bottom:12px}
+.prog-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.prog-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .3s}
+/* Tabs in detail */
+.dtabs{display:flex;gap:0;border-bottom:.5px solid var(--border);margin-bottom:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.dtabs::-webkit-scrollbar{display:none}
+.dtab{flex-shrink:0;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:none;cursor:pointer;border-bottom:2px solid transparent;-webkit-tap-highlight-color:transparent}
+.dtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+/* Steps */
+.step-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:.5px solid var(--border)}
+.step-item:last-child{border-bottom:none}
+.step-chk{width:20px;height:20px;border-radius:10px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;margin-top:1px;transition:all .15s}
+.step-chk.done{background:var(--green);border-color:var(--green);color:#fff}
+.step-text{font-size:14px;color:var(--text);line-height:1.4;flex:1}
+.step-text.done{text-decoration:line-through;color:var(--muted)}
+/* Comments */
+.cmt-add{display:flex;gap:8px;align-items:flex-start;margin-bottom:14px}
+.cmt-inp{flex:1;border:1.5px solid var(--border);border-radius:12px;padding:9px 12px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--text);resize:none;outline:none;min-height:42px}
+.cmt-inp:focus{border-color:var(--accent)}
+.cmt-send{padding:9px 13px;border-radius:9px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;margin-top:2px}
+.flag-btn{display:flex;align-items:center;gap:5px;padding:8px 12px;border-radius:9px;background:var(--red-soft);color:var(--red);border:1px solid rgba(255,59,48,.25);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px;-webkit-tap-highlight-color:transparent;width:100%}
+.cmt-item{display:flex;gap:10px;margin-bottom:12px}
+.cmt-av{width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.cmt-bubble{flex:1}
+.cmt-meta{display:flex;gap:6px;align-items:center;margin-bottom:3px}
+.cmt-from{font-size:12px;font-weight:700}
+.cmt-ts{font-size:11px;color:var(--muted)}
+.cmt-flag-badge{font-size:10px;font-weight:700;background:var(--red-soft);color:var(--red);border-radius:4px;padding:1px 5px}
+.cmt-txt{font-size:14px;line-height:1.5;background:var(--bg);border-radius:8px;padding:8px 10px;border:1px solid var(--border);word-break:break-word}
+.cmt-empty{text-align:center;padding:20px;color:var(--muted);font-size:13px}
+/* Notes area */
+.notes-box{background:var(--surface);border-radius:10px;padding:12px;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-word;border:1px solid var(--border)}
+.empty-notes{color:var(--muted);font-size:13px;font-style:italic}
+@media(min-width:640px){
+  #task-list-panel{width:300px;border-right:.5px solid var(--border)}
+  #detail-panel{display:flex;flex-direction:column}
+  #back-btn{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- PIN screen -->
+<div id="pin-screen">
+  <div class="pin-logo"><i class="ti ti-link" style="color:#fff"></i></div>
+  <div class="pin-greeting" id="pin-name-lbl">Welcome</div>
+  <div class="pin-sub">Enter your PIN to access your tasks</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-err" id="pin-err"></div>
+  <div class="pin-keypad">
+    <button class="pk-btn" onclick="pinKey('1')">1</button>
+    <button class="pk-btn" onclick="pinKey('2')">2</button>
+    <button class="pk-btn" onclick="pinKey('3')">3</button>
+    <button class="pk-btn" onclick="pinKey('4')">4</button>
+    <button class="pk-btn" onclick="pinKey('5')">5</button>
+    <button class="pk-btn" onclick="pinKey('6')">6</button>
+    <button class="pk-btn" onclick="pinKey('7')">7</button>
+    <button class="pk-btn" onclick="pinKey('8')">8</button>
+    <button class="pk-btn" onclick="pinKey('9')">9</button>
+    <div></div>
+    <button class="pk-btn" onclick="pinKey('0')">0</button>
+    <button class="pk-btn del" onclick="pinDel()"><i class="ti ti-backspace"></i></button>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="main-app" class="hidden">
+  <header id="topbar">
+    <div id="topbar-inner">
+      <div id="person-av"></div>
+      <span class="tb-name" id="tb-name-lbl"></span>
+      <button class="tb-logout" onclick="logout()" title="Logout"><i class="ti ti-logout"></i></button>
+    </div>
+  </header>
+  <div id="split">
+    <div id="task-list-panel">
+      <div class="filter-tabs" id="filter-tabs">
+        <div class="ftab active" id="ft-active" onclick="setFilter('active')">Active</div>
+        <div class="ftab" id="ft-done" onclick="setFilter('done')">Done</div>
+        <div class="ftab" id="ft-all" onclick="setFilter('all')">All</div>
+      </div>
+      <div id="task-list"></div>
+    </div>
+    <div id="detail-panel">
+      <div class="detail-wrap" id="detail-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL='https://fldwyttfapnrmvegklrg.supabase.co';
+var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZHd5dHRmYXBucm12ZWdrbHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0MjY5MTAsImV4cCI6MjA2NDAwMjkxMH0.tIjxVOoGbn5gLyFMFhIzm_gFwkqVh4A7HfFXOPxFvJU';
+var db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+var STATE_ROW='main';
+var LOCAL_KEY='chain_local_v1';
+var D={};
+var person=null;
+var selTask=null;
+var dtab='steps';
+var taskFilter='active';
+var pinEntered='';
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function xe(s){var d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
+
+// ── URL params ──
+var params=new URLSearchParams(window.location.search);
+var personId=params.get('pid');
+
+// ── PIN logic ──
+function pinKey(k){
+  if(pinEntered.length>=4)return;
+  pinEntered+=k;
+  updatePinDots();
+  if(pinEntered.length===4)setTimeout(verifyPin,150);
+}
+function pinDel(){
+  pinEntered=pinEntered.slice(0,-1);
+  document.getElementById('pin-err').textContent='';
+  updatePinDots();
+}
+function updatePinDots(){
+  for(var i=0;i<4;i++){
+    var d=document.getElementById('pd'+i);
+    if(d)d.className='pin-dot'+(i<pinEntered.length?' filled':'');
+  }
+}
+function verifyPin(){
+  var p=(D.people||[]).find(function(x){return x.id===personId;});
+  if(!p){document.getElementById('pin-err').textContent='Person not found. Check link.';pinEntered='';updatePinDots();return;}
+  if(!p.pin||String(p.pin)!==pinEntered){
+    document.getElementById('pin-err').textContent='Incorrect PIN. Try again.';
+    pinEntered='';updatePinDots();
+    document.getElementById('pin-screen').style.animation='shake .3s';
+    setTimeout(function(){document.getElementById('pin-screen').style.animation='';},300);
+    return;
+  }
+  person=p;
+  sessionStorage.setItem('delegate_pid',p.id);
+  showApp();
+}
+function logout(){
+  sessionStorage.removeItem('delegate_pid');
+  person=null;pinEntered='';updatePinDots();
+  document.getElementById('pin-screen').classList.remove('hidden');
+  document.getElementById('main-app').classList.add('hidden');
+}
+
+// ── Load & show ──
+async function ld(){
+  var localStr=localStorage.getItem(LOCAL_KEY);
+  if(localStr){try{D=JSON.parse(localStr);}catch(e){}}
+  try{
+    var res=await db.from('chain_state').select('data').eq('id',STATE_ROW).maybeSingle();
+    if(res.data&&res.data.data){
+      var cloud=res.data.data;
+      if(!D._ts||!cloud._ts||cloud._ts>=D._ts){D=cloud;try{localStorage.setItem(LOCAL_KEY,JSON.stringify(D));}catch(e){}}
+    }
+  }catch(e){}
+  var p=(D.people||[]).find(function(x){return x.id===personId;});
+  if(p){
+    document.getElementById('pin-name-lbl').textContent='Hi, '+p.name+'!';
+  }
+  var savedPid=sessionStorage.getItem('delegate_pid');
+  if(savedPid&&savedPid===personId&&p){person=p;showApp();}
+}
+
+function showApp(){
+  document.getElementById('pin-screen').classList.add('hidden');
+  document.getElementById('main-app').classList.remove('hidden');
+  document.getElementById('person-av').style.background=person.color||'#7C6FFF';
+  document.getElementById('person-av').textContent=(person.name||'?').charAt(0).toUpperCase();
+  document.getElementById('tb-name-lbl').textContent=person.name;
+  renderTaskList();
+  startRealtime();
+}
+
+function getMyTasks(){
+  return (D.tasks||[]).filter(function(t){return t.assignedPersonId===personId;});
+}
+function setFilter(f){taskFilter=f;['active','done','all'].forEach(function(x){document.getElementById('ft-'+x).className='ftab'+(x===f?' active':'');});renderTaskList();}
+
+function renderTaskList(){
+  var all=getMyTasks();
+  var tasks=all.filter(function(t){
+    if(taskFilter==='active')return !t.done;
+    if(taskFilter==='done')return t.done;
+    return true;
+  });
+  var el=document.getElementById('task-list');
+  if(!tasks.length){
+    el.innerHTML='<div class="empty-tasks"><i class="ti ti-check"></i>No tasks here</div>';return;
+  }
+  el.innerHTML=tasks.map(function(t){
+    var hasFlag=(t.comments||[]).some(function(c){return c.flagged;});
+    var cmtCount=(t.comments||[]).length;
+    var steps=t.steps||[];
+    var done=steps.filter(function(s){return s.done;}).length;
+    var prog=steps.length?Math.round(done/steps.length*100):0;
+    var isSel=selTask&&selTask.id===t.id;
+    return '<div class="task-row'+(isSel?' sel':'')+'" onclick="openTask(\''+t.id+'\')">'+
+      '<div class="task-check'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleTaskDone(\''+t.id+'\')">'+(t.done?'<i class="ti ti-check" style="font-size:12px;color:#fff"></i>':'')+'</div>'+
+      '<div class="task-info">'+
+        '<div class="task-title'+(t.done?' done':'')+'">'+xe(t.title)+
+          (hasFlag?'<span class="task-flag"><i class="ti ti-question-mark" style="font-size:9px"></i> Flagged</span>':'')+
+          (cmtCount?'<span class="task-cmt-badge"><i class="ti ti-message-circle" style="font-size:11px"></i>'+cmtCount+'</span>':'')+
+        '</div>'+
+        '<div class="task-meta">'+
+          (steps.length?prog+'% done · ':'')+(t.dueDate?'Due '+t.dueDate:'No due date')+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function openTask(id){
+  selTask=(D.tasks||[]).find(function(t){return t.id===id;})||null;
+  if(!selTask)return;
+  dtab='steps';
+  renderTaskList();
+  renderDetail();
+  if(window.innerWidth<640){
+    document.getElementById('task-list-panel').style.display='none';
+    document.getElementById('detail-panel').style.display='flex';
+    document.getElementById('detail-panel').style.flexDirection='column';
+  }
+}
+
+function goBack(){
+  selTask=null;
+  document.getElementById('task-list-panel').style.display='';
+  document.getElementById('detail-panel').style.display='none';
+  renderTaskList();
+}
+
+function renderDetail(){
+  if(!selTask){document.getElementById('detail-wrap').innerHTML='';return;}
+  var t=selTask;
+  var steps=t.steps||[];
+  var done=steps.filter(function(s){return s.done;}).length;
+  var prog=steps.length?Math.round(done/steps.length*100):0;
+  var cmts=t.comments||[];
+  var flagCount=cmts.filter(function(c){return c.flagged;}).length;
+  var html=
+    '<button id="back-btn" onclick="goBack()"><i class="ti ti-chevron-left"></i> Back</button>'+
+    '<div class="detail-title">'+xe(t.title)+'</div>'+
+    '<div class="detail-meta">'+(t.dueDate?'Due: '+t.dueDate:'No due date')+(t.notes?'':'')+
+      (flagCount?'<span style="color:var(--red);font-weight:700;margin-left:8px">❓ '+flagCount+' unanswered</span>':'')+
+    '</div>'+
+    (steps.length?'<div class="prog-bar"><div class="prog-fill" style="width:'+prog+'%"></div></div>':'')+
+    '<div class="dtabs">'+
+      '<button class="dtab'+(dtab==='steps'?' active':'')+'" onclick="setDtab(\'steps\')">Steps ('+steps.length+')</button>'+
+      '<button class="dtab'+(dtab==='notes'?' active':'')+'" onclick="setDtab(\'notes\')">Notes</button>'+
+      '<button class="dtab'+(dtab==='comments'?' active':'')+'" onclick="setDtab(\'comments\')">💬'+(cmts.length?' '+cmts.length:'')+'</button>'+
+    '</div>'+
+    '<div id="dtab-content"></div>';
+  document.getElementById('detail-wrap').innerHTML=html;
+  renderDtab();
+}
+
+function setDtab(t){dtab=t;document.querySelectorAll('.dtab').forEach(function(b,i){b.classList.toggle('active',['steps','notes','comments'][i]===t);});renderDtab();}
+
+function renderDtab(){
+  var el=document.getElementById('dtab-content');if(!el)return;
+  if(dtab==='steps')renderDSteps(el);
+  else if(dtab==='notes')renderDNotes(el);
+  else renderDComments(el);
+}
+
+function renderDSteps(el){
+  var t=selTask;if(!t)return;
+  var steps=t.steps||[];
+  if(!steps.length){el.innerHTML='<div class="empty-notes">No steps for this task</div>';return;}
+  el.innerHTML=steps.map(function(s){
+    return '<div class="step-item">'+
+      '<div class="step-chk'+(s.done?' done':'')+'" onclick="toggleStep(\''+s.id+'\')">'+(s.done?'<i class="ti ti-check" style="font-size:11px"></i>':'')+'</div>'+
+      '<div class="step-text'+(s.done?' done':'')+'">'+xe(s.text)+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderDNotes(el){
+  var t=selTask;if(!t)return;
+  if(!t.notes){el.innerHTML='<div class="empty-notes">No notes added</div>';return;}
+  el.innerHTML='<div class="notes-box">'+xe(t.notes)+'</div>';
+}
+
+function renderDComments(el){
+  var t=selTask;if(!t)return;
+  var cmts=t.comments||[];
+  var html=
+    '<div style="margin-bottom:10px">'+
+    '<button class="flag-btn" onclick="addFlagComment()"><i class="ti ti-question-mark"></i> I need clarification / have a question</button>'+
+    '</div>'+
+    '<div class="cmt-add">'+
+      '<textarea class="cmt-inp" id="dcmt-inp" placeholder="Write a comment…" rows="1" onkeydown="dcmtKey(event)"></textarea>'+
+      '<button class="cmt-send" onclick="sendDComment()">Send</button>'+
+    '</div>';
+  if(!cmts.length){
+    html+='<div class="cmt-empty">No comments yet</div>';
+  } else {
+    html+=cmts.slice().reverse().map(function(c){
+      var isOwner=c.pid==='owner';
+      var isMe=c.pid===personId;
+      var av=isOwner?'<i class="ti ti-link" style="font-size:12px"></i>':xe((c.pname||'?').charAt(0).toUpperCase());
+      var color=isOwner?'var(--accent)':person.color||'#7C6FFF';
+      var dt=new Date(c.ts);
+      var ts=dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      return '<div class="cmt-item">'+
+        '<div class="cmt-av" style="background:'+color+'">'+av+'</div>'+
+        '<div class="cmt-bubble">'+
+          '<div class="cmt-meta">'+
+            '<span class="cmt-from">'+(isOwner?'Manager':(isMe?'You':xe(c.pname||'?')))+'</span>'+
+            '<span class="cmt-ts">'+ts+'</span>'+
+            (c.flagged?'<span class="cmt-flag-badge">❓ Needs Answer</span>':'')+
+          '</div>'+
+          '<div class="cmt-txt">'+xe(c.text)+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+  el.innerHTML=html;
+}
+
+function dcmtKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendDComment();}}
+
+function sendDComment(flagged){
+  if(!selTask)return;
+  var inp=document.getElementById('dcmt-inp');
+  var txt=flagged?'I have a question / need clarification':(inp?inp.value.trim():'');
+  if(!txt)return;
+  if(!selTask.comments)selTask.comments=[];
+  var cmt={id:uid(),pid:personId,pname:person.name,text:txt,ts:new Date().toISOString(),flagged:!!flagged};
+  selTask.comments.push(cmt);
+  // also update in D
+  var t=(D.tasks||[]).find(function(x){return x.id===selTask.id;});
+  if(t){if(!t.comments)t.comments=[];t.comments.push(cmt);}
+  if(inp)inp.value='';
+  sv();renderDetail();renderTaskList();
+}
+
+function addFlagComment(){
+  if(!selTask)return;
+  if(!selTask.comments)selTask.comments=[];
+  var inp=document.getElementById('dcmt-inp');
+  var txt=inp?inp.value.trim():'';
+  var cmt={id:uid(),pid:personId,pname:person.name,text:txt||'I need clarification on this task.',ts:new Date().toISOString(),flagged:true};
+  selTask.comments.push(cmt);
+  var t=(D.tasks||[]).find(function(x){return x.id===selTask.id;});
+  if(t){if(!t.comments)t.comments=[];t.comments.push(cmt);}
+  if(inp)inp.value='';
+  sv();renderDetail();renderTaskList();
+}
+
+function toggleStep(sid){
+  if(!selTask)return;
+  var s=(selTask.steps||[]).find(function(x){return x.id===sid;});
+  if(!s)return;
+  s.done=!s.done;
+  var t=(D.tasks||[]).find(function(x){return x.id===selTask.id;});
+  if(t){var ts=(t.steps||[]).find(function(x){return x.id===sid;});if(ts)ts.done=s.done;}
+  sv();renderDtab();
+}
+
+function toggleTaskDone(id){
+  var t=(D.tasks||[]).find(function(x){return x.id===id;});
+  if(!t)return;
+  t.done=!t.done;
+  if(selTask&&selTask.id===id)selTask.done=t.done;
+  sv();renderTaskList();if(selTask&&selTask.id===id)renderDetail();
+}
+
+async function sv(){
+  D._ts=Date.now();
+  try{localStorage.setItem(LOCAL_KEY,JSON.stringify(D));}catch(e){}
+  try{await db.from('chain_state').upsert({id:STATE_ROW,data:D},{onConflict:'id'});}catch(e){}
+}
+
+function startRealtime(){
+  db.channel('delegate_sync')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'chain_state',filter:'id=eq.'+STATE_ROW},
+      function(payload){
+        if(!payload.new||!payload.new.data)return;
+        D=payload.new.data;
+        try{localStorage.setItem(LOCAL_KEY,JSON.stringify(D));}catch(e){}
+        // update selTask ref
+        if(selTask)selTask=(D.tasks||[]).find(function(t){return t.id===selTask.id;})||selTask;
+        renderTaskList();
+        if(selTask)renderDetail();
+      })
+    .subscribe();
+}
+
+// CSS shake animation for wrong PIN
+var st=document.createElement('style');
+st.textContent='@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}';
+document.head.appendChild(st);
+
+ld();
+</script>
+</body>
+</html>
