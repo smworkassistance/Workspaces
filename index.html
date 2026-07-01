@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v23</title>
+<title>Chain v25</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -1391,7 +1391,8 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
     <div id="perf-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px"></div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Tasks</div>
     <div id="perf-tasks"></div>
-    <button onclick="copyPersonLinkFromPerf()" style="margin-top:16px;width:100%;padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);border:1.5px solid rgba(124,111,255,.3);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">🔗 Copy Employee Link</button>
+    <button id="perf-assign-btn" onclick="closePerfPanel();openModalForPerson(_perfPid)" style="margin-top:16px;width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent"><i class="ti ti-plus"></i> Assign Task</button>
+    <button onclick="copyPersonLinkFromPerf()" style="margin-top:8px;width:100%;padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);border:1.5px solid rgba(124,111,255,.3);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">🔗 Copy Employee Link</button>
   </div>
 </div>
 
@@ -2061,21 +2062,41 @@ function renderTagsView(el) {
 function renderPeopleView(el) {
   var people = D.people||[];
   var tasks = D.tasks||[];
+  var businesses = D.businesses||[];
+  var departments = D.departments||[];
   var empAiOn = D.aiSettings && D.aiSettings.empAiEnabled !== false;
+
   var html = '<div class="ppl-hdr">'+
     '<span class="ppl-hdr-title">Team</span>'+
     '<button class="ppl-add-btn" onclick="openAiSettings()" title="Employee AI Settings" style="background:var(--surface2);color:var(--accent);margin-right:6px"><i class="ti ti-robot"></i> AI</button>'+
     '<button class="ppl-add-btn" onclick="openPModal()"><i class="ti ti-user-plus"></i> Add</button>'+
   '</div>'+
   (empAiOn?'':'<div style="margin:0 14px 8px;padding:8px 12px;background:rgba(255,59,48,.08);border-radius:8px;font-size:12px;color:#FF3B30"><i class="ti ti-robot-off"></i> Employee AI is currently disabled</div>');
-  if (!people.length) {
-    html += '<div class="empty-st"><i class="ti ti-users"></i><p>No team members yet.<br>Add people to delegate tasks<br>and share their task link.</p></div>';
-    el.innerHTML = html; return;
-  }
-  /* Build hierarchy: Business → Dept → Person */
-  var businesses=D.businesses||[];
-  var departments=D.departments||[];
 
+  /* ── How-to guide when no businesses exist ── */
+  if(!businesses.length && !people.length){
+    html+='<div style="margin:16px 14px;padding:16px;background:var(--surface);border-radius:14px;border:.5px solid var(--border)">'+
+      '<div style="font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)">Setup your team in 3 steps</div>'+
+      '<div style="display:flex;flex-direction:column;gap:12px">'+
+        '<div style="display:flex;align-items:flex-start;gap:12px">'+
+          '<div style="width:26px;height:26px;border-radius:13px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>'+
+          '<div><div style="font-weight:600;font-size:14px">Add your Business</div><div style="font-size:12px;color:var(--muted);margin-top:2px">e.g. ABC Pvt Ltd, My Shop</div>'+
+          '<button onclick="openBizModal()" style="margin-top:6px;padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"><i class="ti ti-building"></i> Add Business</button></div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:flex-start;gap:12px;opacity:.5">'+
+          '<div style="width:26px;height:26px;border-radius:13px;background:var(--surface2);color:var(--muted);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>'+
+          '<div><div style="font-weight:600;font-size:14px">Add Departments</div><div style="font-size:12px;color:var(--muted);margin-top:2px">e.g. Operations, Sales, HR — appears after adding business</div></div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:flex-start;gap:12px;opacity:.5">'+
+          '<div style="width:26px;height:26px;border-radius:13px;background:var(--surface2);color:var(--muted);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>'+
+          '<div><div style="font-weight:600;font-size:14px">Add Employees</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Share their link — they see their tasks, map, time & AI</div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+    el.innerHTML=html; return;
+  }
+
+  /* ── Helper ── */
   function personCard(p){
     var tc=tasks.filter(function(t){return t.assignedPersonId===p.id&&!t.done;}).length;
     var unread=(D.notifications||[]).filter(function(n){return n.toId==='owner'&&n.fromPid===p.id&&!(n.readBy||[]).includes('owner');}).length;
@@ -2093,36 +2114,130 @@ function renderPeopleView(el) {
     '</div>';
   }
 
-  if(businesses.length){
-    businesses.forEach(function(biz){
-      var bizPeople=people.filter(function(p){return p.bizId===biz.id;});
-      if(!bizPeople.length)return;
-      html+='<div style="margin:12px 10px 0;padding:10px 12px;background:var(--surface);border-radius:12px;border-left:3px solid '+(biz.color||'var(--accent)')+'">'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
-          '<div style="width:10px;height:10px;border-radius:5px;background:'+(biz.color||'var(--accent)')+'"></div>'+
-          '<span style="font-size:13px;font-weight:700;color:var(--text)">'+xe(biz.name)+'</span>'+
-          '<span style="font-size:11px;color:var(--muted)">'+bizPeople.length+' member'+(bizPeople.length>1?'s':'')+'</span>'+
-        '</div>';
-      /* Group by dept within biz */
-      var deptIds=[...new Set(bizPeople.map(function(p){return p.deptId||'__none__'}))];
-      deptIds.forEach(function(deptId){
-        var dept=deptId!=='__none__'?departments.find(function(d){return d.id===deptId;}):null;
-        var deptPeople=bizPeople.filter(function(p){return (p.deptId||'__none__')===deptId;});
-        if(dept){
-          html+='<div style="margin:6px 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding-left:4px">'+xe(dept.name)+'</div>';
+  /* ── Business → Dept → Person hierarchy ── */
+  businesses.forEach(function(biz){
+    var bizPeople=people.filter(function(p){return p.bizId===biz.id;});
+    var bizDepts=departments.filter(function(d){return d.bizId===biz.id;});
+    var bc=biz.color||'var(--accent)';
+
+    html+='<div style="margin:10px 10px 0;background:var(--surface);border-radius:13px;border:.5px solid var(--border);border-top:3px solid '+bc+';overflow:hidden">'+
+      /* Business header */
+      '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(0,0,0,.02);border-bottom:.5px solid var(--border)">'+
+        '<div style="width:10px;height:10px;border-radius:5px;background:'+bc+'"></div>'+
+        '<span style="font-size:14px;font-weight:700;color:var(--text);flex:1">'+xe(biz.name)+'</span>'+
+        '<span style="font-size:11px;color:var(--muted)">'+bizPeople.length+' member'+(bizPeople.length!==1?'s':'')+'</span>'+
+        '<button onclick="addDeptToBiz(\''+biz.id+'\')" style="margin-left:6px;padding:5px 10px;background:var(--surface2);border:none;border-radius:7px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer"><i class="ti ti-building-plus"></i> Dept</button>'+
+        '<button onclick="openPModalWithBiz(\''+biz.id+'\')" style="margin-left:4px;padding:5px 10px;background:'+bc+';border:none;border-radius:7px;font-size:12px;font-weight:600;color:#fff;cursor:pointer"><i class="ti ti-user-plus"></i></button>'+
+      '</div>';
+
+    /* Show departments (including empty ones) */
+    if(bizDepts.length){
+      bizDepts.forEach(function(dept){
+        var deptPeople=bizPeople.filter(function(p){return p.deptId===dept.id;});
+        html+='<div style="border-bottom:.5px solid var(--border)">'+
+          '<div style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:rgba(0,0,0,.015)">'+
+            '<i class="ti ti-building" style="font-size:12px;color:var(--muted)"></i>'+
+            '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);flex:1">'+xe(dept.name)+'</span>'+
+            '<span style="font-size:11px;color:var(--muted)">'+deptPeople.length+'</span>'+
+            '<button onclick="openPModalWithBizDept(\''+biz.id+'\',\''+dept.id+'\')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;padding:2px 6px" title="Add person"><i class="ti ti-user-plus"></i></button>'+
+            '<button onclick="deleteDept(\''+dept.id+'\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px" title="Delete"><i class="ti ti-trash"></i></button>'+
+          '</div>';
+        if(deptPeople.length){
+          html+='<div style="padding:4px 8px 6px">';
+          deptPeople.forEach(function(p){html+=personCard(p);});
+          html+='</div>';
+        } else {
+          html+='<div style="padding:10px 12px;font-size:12px;color:var(--muted);text-align:center">'+
+            'No members — <button onclick="openPModalWithBizDept(\''+biz.id+'\',\''+dept.id+'\')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;font-weight:600;text-decoration:underline">Add person</button>'+
+          '</div>';
         }
-        deptPeople.forEach(function(p){html+=personCard(p);});
+        html+='</div>';
       });
+    }
+
+    /* People in this biz without a dept */
+    var noDeptPeople=bizPeople.filter(function(p){return !p.deptId;});
+    if(noDeptPeople.length){
+      if(bizDepts.length) html+='<div style="padding:6px 12px 3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">No Department</div>';
+      html+='<div style="padding:4px 8px 6px">';
+      noDeptPeople.forEach(function(p){html+=personCard(p);});
       html+='</div>';
-    });
-  }
+    }
+
+    /* Empty business placeholder */
+    if(!bizPeople.length && !bizDepts.length){
+      html+='<div style="padding:14px 12px;font-size:13px;color:var(--muted);text-align:center">'+
+        '<div style="margin-bottom:8px">Add departments or people to <strong>'+xe(biz.name)+'</strong></div>'+
+        '<button onclick="addDeptToBiz(\''+biz.id+'\')" style="padding:7px 16px;background:var(--surface2);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-right:8px"><i class="ti ti-building-plus"></i> Add Dept</button>'+
+        '<button onclick="openPModalWithBiz(\''+biz.id+'\')" style="padding:7px 16px;background:'+bc+';color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"><i class="ti ti-user-plus"></i> Add Person</button>'+
+      '</div>';
+    }
+
+    html+='</div>'; /* end biz block */
+  });
+
   /* People with no business */
   var noBizPeople=people.filter(function(p){return !p.bizId;});
   if(noBizPeople.length){
-    html+='<div class="ppl-dept-lbl" style="margin-top:12px">No Business Assigned</div>';
+    html+='<div style="margin:10px 10px 0">'+
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:4px 0 6px">No Business Assigned</div>';
     noBizPeople.forEach(function(p){html+=personCard(p);});
+    html+='</div>';
   }
+
+  /* Add business CTA at bottom if no businesses yet but has people */
+  if(!businesses.length && people.length){
+    html+='<div style="margin:12px 14px;padding:12px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--muted);text-align:center">'+
+      '<button onclick="openBizModal()" style="padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"><i class="ti ti-building"></i> Add Business</button>'+
+      '<div style="margin-top:6px;font-size:12px">Organize your team under businesses and departments</div>'+
+    '</div>';
+  }
+
   el.innerHTML = html;
+}
+
+/* ── Business/Dept helpers ───────────────────────────────── */
+function addDeptToBiz(bizId){
+  var name=(prompt('Department name:')||'').trim();
+  if(!name)return;
+  if(!D.departments)D.departments=[];
+  D.departments.push({id:uid(),name:name,bizId:bizId});
+  sv();renderList();
+}
+
+function deleteDept(deptId){
+  if(!confirm('Delete this department? Members will be unassigned from it.'))return;
+  D.departments=(D.departments||[]).filter(function(d){return d.id!==deptId;});
+  (D.people||[]).forEach(function(p){if(p.deptId===deptId)p.deptId=null;});
+  sv();renderList();
+}
+
+function openPModalWithBiz(bizId){
+  openPModal();
+  setTimeout(function(){
+    var s=document.getElementById('p-biz');
+    if(s){s.value=bizId;if(typeof onPBizChange==='function')onPBizChange();}
+  },120);
+}
+
+function openPModalWithBizDept(bizId,deptId){
+  openPModal();
+  setTimeout(function(){
+    var s=document.getElementById('p-biz');
+    if(s){s.value=bizId;if(typeof onPBizChange==='function')onPBizChange();}
+    setTimeout(function(){
+      var d=document.getElementById('p-dept-sel');
+      if(d)d.value=deptId;
+    },80);
+  },120);
+}
+
+function openModalForPerson(personId){
+  openModal(null);
+  setTimeout(function(){
+    var s=document.getElementById('modal-assignee');
+    if(s)s.value=personId;
+  },100);
 }
 
 /* ── Goals view ──────────────────────────────────────────── */
