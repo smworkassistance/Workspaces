@@ -233,14 +233,32 @@ var STEP_GAP = 30;    // vertical gap between steps
 
 /* ── Load data ─────────────────────────────────────────────── */
 (async function(){
+  /* Try localStorage first for instant load */
+  var local=localStorage.getItem('chain_local_v1');
+  if(local){try{var ld=JSON.parse(local);if(ld&&ld.tasks){D=ld;if(!D.tasks)D.tasks=[];if(!D.projects)D.projects=[];}}catch(e){}}
   try {
     var r = await db.from('chain_state').select('data').eq('id',STATE_ROW).maybeSingle();
     if(r.data && r.data.data){
-      D = r.data.data;
-      if(!D.tasks)    D.tasks    = [];
-      if(!D.projects) D.projects = [];
+      var cloud=r.data.data;
+      if(!D._ts||!cloud._ts||cloud._ts>=D._ts){
+        D = cloud;
+        if(!D.tasks)    D.tasks    = [];
+        if(!D.projects) D.projects = [];
+      }
     }
   } catch(e){ console.error(e); }
+
+  /* Employee mode — filter to only that person's tasks */
+  var dpid=localStorage.getItem('chain_delegate_pid');
+  if(dpid){
+    D.tasks=(D.tasks||[]).filter(function(t){
+      return t.assignedPersonId===dpid||(t.isPersonal&&t.personalOwnerId===dpid);
+    });
+    /* Keep only projects that have remaining tasks */
+    var ptIds=new Set(D.tasks.map(function(t){return t.projectId;}).filter(Boolean));
+    D.projects=(D.projects||[]).filter(function(p){return ptIds.has(p.id);});
+  }
+
   document.getElementById('loading').style.display = 'none';
   render();
 })();

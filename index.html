@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#F2F2F7">
-<title>Chain v21</title>
+<title>Chain v22</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -1267,6 +1267,31 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
 .cmt-empty{text-align:center;padding:24px 0;color:var(--muted);font-size:13px}
 /* ── Select (task modal assignee) ───────────────────── */
 #modal select{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;-webkit-appearance:none;margin-bottom:0}
+/* ── Notification badge ─────────────────────────────── */
+#notif-btn{position:relative;background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;padding:4px;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;align-items:center}
+#notif-badge{display:none;position:absolute;top:-1px;right:-1px;min-width:16px;height:16px;background:var(--red);color:#fff;border-radius:8px;font-size:10px;font-weight:700;line-height:16px;text-align:center;padding:0 3px}
+#notif-overlay{position:fixed;inset:0;z-index:400;display:none}
+#notif-panel{position:absolute;top:calc(44px + env(safe-area-inset-top,0px) + 6px);right:8px;width:min(320px,calc(100vw - 16px));max-height:420px;background:var(--surface);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow-y:auto;border:.5px solid var(--border);animation:slideDown .15s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.notif-item{padding:10px 14px;border-bottom:.5px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s}
+.notif-item:active{background:var(--accent-soft)}
+.notif-item-title{font-size:13px;font-weight:600;color:var(--text)}
+.notif-item-sub{font-size:11px;color:var(--muted);margin-top:2px}
+/* ── People performance panel ───────────────────────── */
+.perf-stat{border-radius:10px;padding:10px;text-align:center}
+.perf-stat-val{font-size:22px;font-weight:800;line-height:1.1}
+.perf-stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.perf-task-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.perf-task-row:last-child{border-bottom:none}
+.perf-task-row:active{opacity:.7}
+.perf-task-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.perf-task-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.perf-task-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.ppl-card-clickable{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ppl-card-clickable:active{background:rgba(124,111,255,.04)}
+#perf-overlay{position:fixed;inset:0;z-index:500;display:none;background:rgba(0,0,0,.35)}
+#perf-overlay.open{display:block}
+#perf-overlay.open #perf-sheet{transform:translateX(0)}
 </style>
 </head>
 <body>
@@ -1286,6 +1311,10 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
         <button id="gs-clear" onclick="gsClear()">✕</button>
         <div id="gs-dropdown"></div>
       </div>
+      <button id="notif-btn" onclick="openNotifPanel()" title="Notifications">
+        <i class="ti ti-bell"></i>
+        <span id="notif-badge">0</span>
+      </button>
       <div id="sync-dot" title="Sync status"></div>
     </div>
   </header>
@@ -1335,6 +1364,34 @@ body.resizing{cursor:col-resize!important;user-select:none!important}
   <a href="finance.html" class="bn-item"><i class="ti ti-chart-bar"></i><span>Finance</span></a>
   <a href="mindmapv25.html" class="bn-item"><i class="ti ti-sparkles"></i><span>AI</span></a>
 </nav>
+
+<!-- Notification Panel -->
+<div id="notif-overlay" onclick="closeNotifPanel()">
+  <div id="notif-panel">
+    <div style="padding:12px 14px;font-size:14px;font-weight:700;border-bottom:.5px solid var(--border);display:flex;align-items:center;gap:8px">
+      <i class="ti ti-bell" style="color:var(--accent)"></i> Notifications
+    </div>
+    <div id="notif-list"></div>
+  </div>
+</div>
+
+<!-- Person Performance Panel -->
+<div id="perf-overlay" onclick="closePerfPanel()">
+  <div id="perf-sheet" onclick="event.stopPropagation()" style="position:fixed;right:0;top:0;bottom:0;width:min(380px,100vw);background:var(--surface);box-shadow:-8px 0 32px rgba(0,0,0,.16);overflow-y:auto;padding:20px 16px calc(env(safe-area-inset-bottom,0px)+20px);transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;gap:0;z-index:501">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div id="perf-av" style="width:52px;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div id="perf-name" style="font-size:18px;font-weight:700;color:var(--text)"></div>
+        <div id="perf-role" style="font-size:13px;color:var(--muted);margin-top:2px"></div>
+      </div>
+      <button onclick="closePerfPanel()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="perf-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px"></div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Tasks</div>
+    <div id="perf-tasks"></div>
+    <button onclick="copyPersonLinkFromPerf()" style="margin-top:16px;width:100%;padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);border:1.5px solid rgba(124,111,255,.3);font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">🔗 Copy Employee Link</button>
+  </div>
+</div>
 
 <!-- Task Modal -->
 <div id="modal-overlay" onclick="closeModal()">
@@ -1539,9 +1596,10 @@ function ensureDefaults() {
   if (!D.goals)      D.goals      = [];
   if (!D.categories) D.categories = DEFAULT_CATEGORIES.map(function(c){return{id:c.id,name:c.name,color:c.color};});
   if (!D.tags)       D.tags       = DEFAULT_TAGS.map(function(t){return{id:t.id,name:t.name,color:t.color};});
-  if (!D.timeBlocks) D.timeBlocks = [];
-  if (!D.businesses) D.businesses = [];
-  if (!D.people)     D.people     = [];
+  if (!D.timeBlocks)   D.timeBlocks   = [];
+  if (!D.businesses)   D.businesses   = [];
+  if (!D.people)       D.people       = [];
+  if (!D.notifications) D.notifications = [];
   if (!('currentBizId' in D)) D.currentBizId = null;
   D.tasks.forEach(function(t){
     if (!t.tags)       t.tags=[];
@@ -1552,6 +1610,8 @@ function ensureDefaults() {
     if (!('assignedPersonId' in t)) t.assignedPersonId=null;
     if (!t.comments)              t.comments=[];
     if (!('bizId' in t))          t.bizId=null;
+    if (!('isPersonal' in t))     t.isPersonal=false;
+    if (!('personalOwnerId' in t)) t.personalOwnerId=null;
     (t.steps||[]).forEach(function(s){ if(!s.tags) s.tags=[]; });
   });
   D.projects.forEach(function(p){
@@ -1980,16 +2040,17 @@ function renderPeopleView(el) {
     byDept[dept].forEach(function(p){
       var tc = tasks.filter(function(t){return t.assignedPersonId===p.id&&!t.done;}).length;
       var biz = (D.businesses||[]).find(function(b){return b.id===p.bizId;});
-      html += '<div class="ppl-card">'+
+      var unread=(D.notifications||[]).filter(function(n){return n.toId==='owner'&&n.fromPid===p.id&&!(n.readBy||[]).includes('owner');}).length;
+      html += '<div class="ppl-card ppl-card-clickable" onclick="openPersonPerf(\''+p.id+'\')">'+
         '<div class="ppl-av" style="background:'+(p.color||'#7C6FFF')+'">'+xe((p.name||'?').charAt(0).toUpperCase())+'</div>'+
         '<div class="ppl-info">'+
-          '<div class="ppl-name">'+xe(p.name)+'</div>'+
+          '<div class="ppl-name">'+xe(p.name)+(unread?'<span style="display:inline-block;margin-left:6px;min-width:18px;height:18px;background:var(--red);color:#fff;border-radius:9px;font-size:10px;font-weight:700;line-height:18px;text-align:center;padding:0 4px">'+unread+'</span>':'')+'</div>'+
           '<div class="ppl-role">'+(p.role?xe(p.role):'—')+(biz?' · <span style="color:'+biz.color+'">'+xe(biz.name)+'</span>':'')+'</div>'+
           (tc?'<div class="ppl-tc">'+tc+' active task'+(tc>1?'s':'')+'</div>':'')+
         '</div>'+
         '<div class="ppl-acts">'+
-          '<button class="ppl-link-btn" onclick="copyPersonLink(\''+p.id+'\')">🔗 Link</button>'+
-          '<button class="ppl-edit-btn" onclick="openPModal(\''+p.id+'\')"><i class="ti ti-edit"></i></button>'+
+          '<button class="ppl-link-btn" onclick="event.stopPropagation();copyPersonLink(\''+p.id+'\')">🔗</button>'+
+          '<button class="ppl-edit-btn" onclick="event.stopPropagation();openPModal(\''+p.id+'\')"><i class="ti ti-edit"></i></button>'+
         '</div>'+
       '</div>';
     });
@@ -2307,8 +2368,8 @@ function render() {
 }
 
 function renderBadges() {
-  var active=D.tasks.filter(function(t){return!t.done;}).length;
-  var done=D.tasks.filter(function(t){return t.done;}).length;
+  var active=D.tasks.filter(function(t){return!t.done&&!t.isPersonal;}).length;
+  var done=D.tasks.filter(function(t){return t.done&&!t.isPersonal;}).length;
   document.getElementById('badges').innerHTML=
     (active?'<span class="badge badge-active">'+active+'</span>':'')+
     (done?'<span class="badge badge-done">'+done+' done</span>':'');
@@ -2367,20 +2428,22 @@ function renderList() {
   if (currentMode==='tags')   { renderTagsView(el); return; }
   if (currentMode==='people') { renderPeopleView(el); return; }
   var q = searchQ.trim().toLowerCase();
+  /* Filter out personal (employee-private) tasks from owner list */
+  var ownerTasks = D.tasks.filter(function(t){ return !t.isPersonal; });
   var tasks = q
-    ? D.tasks.filter(function(t){
+    ? ownerTasks.filter(function(t){
         return t.title.toLowerCase().indexOf(q) !== -1 ||
           (t.assignee||'').toLowerCase().indexOf(q) !== -1 ||
           (t.steps||[]).some(function(s){ return s.text.toLowerCase().indexOf(q) !== -1; });
       })
-    : D.tasks;
+    : ownerTasks;
 
   var groups = [];
   D.projects.forEach(function(p) {
     var pt = tasks.filter(function(t){ return t.projectId === p.id; });
     /* show project if name matches search OR has matching tasks */
     if (!q || pt.length || p.name.toLowerCase().indexOf(q) !== -1) {
-      var showTasks = pt.length ? pt : (p.name.toLowerCase().indexOf(q) !== -1 ? D.tasks.filter(function(t){return t.projectId===p.id;}) : pt);
+      var showTasks = pt.length ? pt : (p.name.toLowerCase().indexOf(q) !== -1 ? ownerTasks.filter(function(t){return t.projectId===p.id;}) : pt);
       groups.push({label:p.name, color:p.color, projId:p.id, tasks:showTasks});
     }
   });
@@ -3040,8 +3103,10 @@ function saveNew() {
   var catId=document.getElementById('modal-cat').value||null;
   var task={id:uid(),title:name,assignee:assName,assignedPersonId:assId,projectId:projId,dueDate:due,
     done:false,notes:'',createdAt:new Date().toISOString(),steps:[],tags:editingTags.slice(),
-    goalId:goalId,categoryId:catId,target:'',preparation:'',comments:[],bizId:D.currentBizId||null};
+    goalId:goalId,categoryId:catId,target:'',preparation:'',comments:[],bizId:D.currentBizId||null,
+    isPersonal:false,personalOwnerId:null};
   D.tasks.unshift(task);aid=task.id;ctab='steps';
+  if(assId) addNotification(assId,'task_assigned',task.id,name,'Manager');
   lg('Task created: "'+name+'"'+(assName?' → '+assName:''));
   sv();closeModal();render();
   if(isMob()) document.body.classList.add('mob-detail');
@@ -3056,8 +3121,10 @@ function saveEdit() {
   var goalId=document.getElementById('modal-goal').value||null;
   var catId=document.getElementById('modal-cat').value||null;
   var t=gt(editId); if(!t) return;
+  var prevAssId=t.assignedPersonId;
   var old=t.title;t.title=name;t.assignee=assName;t.assignedPersonId=assId;t.projectId=projId;t.dueDate=due;
   t.tags=editingTags.slice();t.goalId=goalId;t.categoryId=catId;
+  if(assId && assId!==prevAssId) addNotification(assId,'task_assigned',t.id,name,'Manager');
   lg('Task updated: "'+old+'" → "'+name+'"');
   sv();closeModal();render();
 }
@@ -3122,6 +3189,8 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
 })();
 
 (async function(){
+  /* Owner mode — clear any employee context */
+  localStorage.removeItem('chain_delegate_pid');
   /* Show loading only if no local cache exists */
   var hasLocal = !!localStorage.getItem(LOCAL_KEY);
   if (!hasLocal) {
@@ -3144,9 +3213,11 @@ document.getElementById('proj-modal-name').addEventListener('keydown',function(e
       }
     }
   }catch(e){}
-  if(!aid && D.tasks && D.tasks.length) aid=D.tasks[0].id;
+  var visibleTasks=(D.tasks||[]).filter(function(t){return !t.isPersonal;});
+  if(!aid && visibleTasks.length) aid=visibleTasks[0].id;
   render();
   updateBizBtn();
+  updateNotifBadge();
   if (navigator.onLine) startRealtime();
 })();
 
@@ -3491,9 +3562,117 @@ function sendComment(){
   var txt=inp.value.trim();if(!txt)return;
   if(!t.comments)t.comments=[];
   t.comments.push({id:uid(),pid:'owner',pname:'You',text:txt,ts:new Date().toISOString(),flagged:false});
+  if(t.assignedPersonId){
+    addNotification(t.assignedPersonId,'comment_added',t.id,t.title,'Manager');
+  }
   sv();inp.value='';
   var el=document.getElementById('tab-content');if(el)renderComments(el);
   renderDetail();
+}
+
+/* ── Notifications ─────────────────────────────────────────── */
+function addNotification(toId,type,taskId,taskTitle,fromName,fromPid){
+  if(!D.notifications)D.notifications=[];
+  D.notifications.unshift({id:uid(),toId:toId,fromPid:fromPid||null,type:type,taskId:taskId,taskTitle:taskTitle,fromName:fromName||'Manager',ts:new Date().toISOString(),readBy:[]});
+  if(D.notifications.length>300)D.notifications=D.notifications.slice(0,300);
+  updateNotifBadge();
+}
+function ownerUnreadCount(){
+  return (D.notifications||[]).filter(function(n){return n.toId==='owner'&&!(n.readBy||[]).includes('owner');}).length;
+}
+function updateNotifBadge(){
+  var cnt=ownerUnreadCount();
+  var badge=document.getElementById('notif-badge');
+  if(!badge)return;
+  if(cnt>0){badge.style.display='';badge.textContent=cnt>9?'9+':cnt;}
+  else{badge.style.display='none';}
+}
+function openNotifPanel(){
+  var list=document.getElementById('notif-list');
+  var ownerNotifs=(D.notifications||[]).filter(function(n){return n.toId==='owner';}).slice(0,40);
+  if(!ownerNotifs.length){
+    list.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px"><i class="ti ti-bell-off" style="font-size:28px;opacity:.4;display:block;margin-bottom:8px"></i>No notifications yet</div>';
+  } else {
+    list.innerHTML=ownerNotifs.map(function(n){
+      var unread=!(n.readBy||[]).includes('owner');
+      var icon=n.type==='task_flagged'?'❓':n.type==='comment_added'?'💬':n.type==='personal_task_created'?'✏️':'📌';
+      var dt=new Date(n.ts);
+      var ts=dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' '+dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      return '<div class="notif-item'+(unread?' notif-unread':'')+'" onclick="closeNotifPanel();'+(n.taskId?'sel(\''+n.taskId+'\')':'')+'" style="'+(unread?'background:rgba(124,111,255,.06)':'')+'">'+
+        (unread?'<div style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:6px;height:6px;background:var(--accent);border-radius:3px"></div>':'')+
+        '<div class="notif-item-title" style="padding-left:'+(unread?'14px':'0')+'">'+icon+' '+xe(n.fromName)+' — '+xe(n.taskTitle||'')+'</div>'+
+        '<div class="notif-item-sub" style="padding-left:'+(unread?'14px':'0')+'">'+n.type.replace(/_/g,' ')+' · '+ts+'</div>'+
+      '</div>';
+    }).join('');
+  }
+  /* Mark all owner notifs as read */
+  var changed=false;
+  (D.notifications||[]).forEach(function(n){if(n.toId==='owner'&&!(n.readBy||[]).includes('owner')){n.readBy.push('owner');changed=true;}});
+  if(changed){sv();updateNotifBadge();}
+  var overlay=document.getElementById('notif-overlay');
+  if(overlay)overlay.style.display='';
+}
+function closeNotifPanel(){var o=document.getElementById('notif-overlay');if(o)o.style.display='none';}
+
+/* ── Person Performance Panel ────────────────────────────── */
+var _perfPid=null;
+function openPersonPerf(pid){
+  _perfPid=pid;
+  var p=(D.people||[]).find(function(x){return x.id===pid;});
+  if(!p)return;
+  var myTasks=(D.tasks||[]).filter(function(t){return t.assignedPersonId===pid||(t.isPersonal&&t.personalOwnerId===pid);});
+  var activeTasks=myTasks.filter(function(t){return !t.done;});
+  var doneTasks=myTasks.filter(function(t){return t.done;});
+  var unread=(D.notifications||[]).filter(function(n){return n.toId==='owner'&&n.fromPid===pid&&!(n.readBy||[]).includes('owner');}).length;
+  var av=document.getElementById('perf-av');
+  av.style.background=p.color||'#7C6FFF';
+  av.textContent=(p.name||'?').charAt(0).toUpperCase();
+  document.getElementById('perf-name').textContent=p.name||'';
+  document.getElementById('perf-role').textContent=(p.role||'')+(p.dept?' · '+p.dept:'');
+  document.getElementById('perf-stats').innerHTML=
+    '<div class="perf-stat" style="background:var(--accent-soft)">'+
+      '<div class="perf-stat-val" style="color:var(--accent)">'+activeTasks.length+'</div>'+
+      '<div class="perf-stat-lbl">Active</div>'+
+    '</div>'+
+    '<div class="perf-stat" style="background:rgba(52,199,89,.12)">'+
+      '<div class="perf-stat-val" style="color:#34C759">'+doneTasks.length+'</div>'+
+      '<div class="perf-stat-lbl">Done</div>'+
+    '</div>'+
+    '<div class="perf-stat" style="background:'+(unread?'rgba(255,59,48,.1)':'var(--surface2)')+'">'+
+      '<div class="perf-stat-val" style="color:'+(unread?'var(--red)':'var(--muted)')+'">'+unread+'</div>'+
+      '<div class="perf-stat-lbl">New</div>'+
+    '</div>';
+  if(!myTasks.length){
+    document.getElementById('perf-tasks').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px"><i class="ti ti-subtask" style="font-size:28px;opacity:.4;display:block;margin-bottom:8px"></i>No tasks yet</div>';
+  } else {
+    document.getElementById('perf-tasks').innerHTML=myTasks.map(function(t){
+      var steps=t.steps||[];
+      var doneSteps=steps.filter(function(s){return s.done;}).length;
+      var pct2=steps.length?Math.round(doneSteps/steps.length*100):0;
+      var hasFlag=(t.comments||[]).some(function(c){return c.flagged;});
+      var personal=t.isPersonal?'<span style="font-size:10px;background:rgba(255,149,0,.15);color:#FF9500;border-radius:4px;padding:1px 5px;margin-left:5px">Personal</span>':'';
+      return '<div class="perf-task-row" onclick="closePerfPanel();sel(\''+t.id+'\')">'+
+        '<div class="perf-task-ico" style="background:'+(t.done?'rgba(52,199,89,.12)':'var(--accent-soft)')+'">'+
+          '<i class="ti ti-'+(t.done?'check':'subtask')+'" style="color:'+(t.done?'#34C759':'var(--accent)')+';font-size:16px"></i>'+
+        '</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div class="perf-task-name" style="color:'+(t.done?'var(--muted)':'var(--text)')+(t.done?';text-decoration:line-through':'')+'">'
+            +xe(t.title)+personal+(hasFlag?' ❓':'')+'</div>'+
+          (steps.length?'<div class="perf-task-meta">'+pct2+'% · '+doneSteps+'/'+steps.length+' steps</div>':'')+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+  /* Mark notifs from this person as read */
+  var changed2=false;
+  (D.notifications||[]).forEach(function(n){if(n.toId==='owner'&&n.fromPid===pid&&!(n.readBy||[]).includes('owner')){n.readBy.push('owner');changed2=true;}});
+  if(changed2){sv();updateNotifBadge();renderPeopleView&&document.getElementById('task-list')&&(currentMode==='people')&&renderList();}
+  document.getElementById('perf-overlay').classList.add('open');
+}
+function closePerfPanel(){document.getElementById('perf-overlay').classList.remove('open');}
+function copyPersonLinkFromPerf(){
+  if(!_perfPid)return;
+  copyPersonLink(_perfPid);
 }
 
 /* Close dropdown when clicking outside */

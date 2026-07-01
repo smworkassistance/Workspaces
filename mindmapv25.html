@@ -1335,41 +1335,78 @@ var WORKER_URL = 'https://chain.smworkassistance.workers.dev/';
 async function callGemini(userMessage){
   var model = localStorage.getItem('chain_ai_model')||'gemini-2.5-flash';
 
-  /* Build system instruction from KB rows */
-  var sysRow = kbRows.find(function(r){ return r.id==='sys_prompt'; });
-  var sysText = sysRow ? sysRow.explanation : 'You are a focused work assistant.';
+  /* ── Employee mode check ────────────────────────────────── */
+  var delegatePid = localStorage.getItem('chain_delegate_pid');
+  var isEmployee = !!delegatePid;
+  var empPerson = isEmployee && taskData ? (taskData.people||[]).find(function(p){return p.id===delegatePid;}) : null;
+  var empName = empPerson ? empPerson.name : 'Team Member';
 
-  /* Append all other KB rows as workstyle context */
-  var philRows = kbRows.filter(function(r){ return r.id!=='sys_prompt'; });
-  if(philRows.length){
-    sysText += '\n\n## My Workstyle Knowledge Base\n';
-    philRows.forEach(function(r){
-      sysText += '\n### '+r.head+'\n'+r.explanation;
+  /* For employees, use a filtered taskData view (only their tasks) */
+  var origTasks = null;
+  if(isEmployee && taskData){
+    origTasks = taskData.tasks;
+    taskData.tasks = (taskData.tasks||[]).filter(function(t){
+      return t.assignedPersonId===delegatePid || (t.isPersonal && t.personalOwnerId===delegatePid);
     });
   }
 
-  /* Append action log context (compressed history) */
-  var logCtx = buildLogContext();
-  if(logCtx) sysText += '\n\n## Action History (compressed)\n'+logCtx;
+  /* Build system instruction */
+  var sysText;
+  if(isEmployee){
+    sysText = 'You are a personal task management assistant for '+empName+'. ' +
+      'Your role is to help them manage, understand, and complete their assigned tasks effectively.\n\n' +
+      'RULES:\n' +
+      '- Only discuss tasks assigned to '+empName+' or their personal tasks. Never mention other employees\' tasks or confidential business information.\n' +
+      '- Do not discuss financial data, revenue figures, or other employees\' performance.\n' +
+      '- Help them break down tasks into steps, set priorities, and stay focused.\n' +
+      '- If they ask about tasks that are not theirs, politely decline.\n' +
+      '- Be encouraging and practical — help them succeed at their work.\n' +
+      '- You can suggest creating personal tasks or adding steps to existing tasks.';
+    if(empPerson && empPerson.role){
+      sysText += '\n\nEmployee role: '+empPerson.role+(empPerson.dept?' | Department: '+empPerson.dept:'');
+    }
+  } else {
+    var sysRow = kbRows.find(function(r){ return r.id==='sys_prompt'; });
+    sysText = sysRow ? sysRow.explanation : 'You are a focused work assistant.';
+    /* Append all other KB rows as workstyle context */
+    var philRows = kbRows.filter(function(r){ return r.id!=='sys_prompt'; });
+    if(philRows.length){
+      sysText += '\n\n## My Workstyle Knowledge Base\n';
+      philRows.forEach(function(r){
+        sysText += '\n### '+r.head+'\n'+r.explanation;
+      });
+    }
+    /* Append action log context (compressed history) */
+    var logCtx = buildLogContext();
+    if(logCtx) sysText += '\n\n## Action History (compressed)\n'+logCtx;
+  }
 
   /* Append task data if loaded */
   if(taskData && taskData.tasks && taskData.tasks.length){
     sysText += '\n\n## Current Task Data\n'+buildTaskSummary();
   }
 
-  /* Append time blocks if available */
-  if(taskData && taskData.timeBlocks && taskData.timeBlocks.length){
+  /* Append time blocks if available (owner only) */
+  if(!isEmployee && taskData && taskData.timeBlocks && taskData.timeBlocks.length){
     sysText += '\n\n## Daily Time Structure (Time Blocks)\n'+buildTimeBlocksSummary();
   }
+
+  /* Restore original taskData after building summary */
+  if(isEmployee && origTasks !== null) taskData.tasks = origTasks;
 
   /* Current date and time — always inject */
   var now = new Date();
   sysText += '\n\nCurrent date & time: '+now.toLocaleString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
 
-  /* Task reference and action instructions */
+  /* Task reference instructions */
   sysText += '\n\n## How to Reference Tasks/Projects\nWhen mentioning a specific task, write: [[task:Exact Task Title]]\nWhen mentioning a project, write: [[proj:Exact Project Name]]\nThese become clickable links in the chat.';
 
-  sysText += '\n\n## App Actions (with user confirmation)\nIf user asks you to create/edit tasks or projects, output an action block:\n\n:::action\n{"type":"create_task","data":{"title":"Task Name","assignee":"Name","projectName":"Project","dueDate":"YYYY-MM-DD","notes":"","target":"","preparation":""}}\n:::\n\nAction types:\n- create_task: data={title,assignee?,projectName?,dueDate?,notes?,target?,preparation?}\n- edit_task: data={taskId or taskTitle,taskTitle,changes:{title?,assignee?,notes?,target?,preparation?,dueDate?}}\n- mark_done: data={taskTitle,done:true|false}\n- add_step: data={taskTitle,stepText}\n- create_project: data={name,color?}\n\nALWAYS explain what you are doing after the action block. NEVER do multiple actions in one response. ALWAYS wait — the user must approve before considering it done.';
+  /* Action instructions — full for owner, personal-task-only for employee */
+  if(!isEmployee){
+    sysText += '\n\n## App Actions (with user confirmation)\nIf user asks you to create/edit tasks or projects, output an action block:\n\n:::action\n{"type":"create_task","data":{"title":"Task Name","assignee":"Name","projectName":"Project","dueDate":"YYYY-MM-DD","notes":"","target":"","preparation":""}}\n:::\n\nAction types:\n- create_task: data={title,assignee?,projectName?,dueDate?,notes?,target?,preparation?}\n- edit_task: data={taskId or taskTitle,taskTitle,changes:{title?,assignee?,notes?,target?,preparation?,dueDate?}}\n- mark_done: data={taskTitle,done:true|false}\n- add_step: data={taskTitle,stepText}\n- create_project: data={name,color?}\n\nALWAYS explain what you are doing after the action block. NEVER do multiple actions in one response. ALWAYS wait — the user must approve before considering it done.';
+  } else {
+    sysText += '\n\nYou can suggest adding steps to tasks (the user can do it in the app). You cannot create tasks for other people or modify projects.';
+  }
 
   /* Build conversation history (last 20 turns) */
   var history = chatLog.slice(-20);
