@@ -1549,19 +1549,17 @@ async function boot(){
 boot();
 
 /* ── Dynamic nav (employee vs owner) ─────────────────────── */
-(function(){
+window.addEventListener('DOMContentLoaded',function(){
   var dpid=sessionStorage.getItem('chain_delegate_pid');
   var nav=document.getElementById('bottom-nav');
-  if(!nav)return;
-  if(dpid){
-    nav.innerHTML=
-      '<a href="delegate.html?pid='+dpid+'" class="bn-item"><i class="ti ti-home"></i><span>Home</span></a>'+
-      '<a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>'+
-      '<a href="timeblocksv1.html" class="bn-item"><i class="ti ti-clock-bolt"></i><span>Time</span></a>'+
-      '<a href="mindmapv25.html" class="bn-item active"><i class="ti ti-sparkles"></i><span>AI</span></a>';
-    nav.style.cssText+=';display:grid;grid-template-columns:repeat(4,1fr)';
-  }
-})();
+  if(!nav||!dpid)return;
+  nav.innerHTML=
+    '<a href="delegate.html?pid='+dpid+'" class="bn-item"><i class="ti ti-home"></i><span>Home</span></a>'+
+    '<a href="mindmapv18.html" class="bn-item"><i class="ti ti-schema"></i><span>2D Map</span></a>'+
+    '<a href="timeblocksv1.html" class="bn-item"><i class="ti ti-clock-bolt"></i><span>Time</span></a>'+
+    '<a href="mindmapv25.html" class="bn-item active"><i class="ti ti-sparkles"></i><span>AI</span></a>';
+  nav.style.cssText+=';display:grid;grid-template-columns:repeat(4,1fr)';
+});
 </script>
 
 <nav id="bottom-nav">
